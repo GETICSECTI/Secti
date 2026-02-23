@@ -22,7 +22,7 @@ import { Certificacoes } from './pages/public/secti/Certificacoes.tsx';
 import { Servidor } from './pages/public/secti/Servidor.tsx';
 import { Parcerias } from './pages/public/secti/Parcerias.tsx';
 import { Legislacao } from './pages/public/secti/Legislacao.tsx';
-import { Relatorios } from './pages/public/Relatorios.tsx';
+import { Relatorios } from './pages/public/secti/Relatorios.tsx';
 import { Projetos } from './pages/public/Projetos.tsx';
 
 // Private Pages

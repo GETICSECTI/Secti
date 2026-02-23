@@ -94,6 +94,10 @@ export interface RelatorioPublicoItem {
   titulo: string;
   caminhoArquivo: string;
   dataPublicacao: string; // Data completa do backend
+  tags?: Array<{
+    id: number;
+    nome: string;
+  }>;
 }
 
 export interface RelatorioPublicoListResponse {
@@ -106,9 +110,9 @@ export interface RelatorioPublicoListResponse {
 
 export interface RelatorioPublicoFilters {
   titulo?: string;
+  ano?: number;
   dataPublicacao?: string;
-  caminho?: string;
-  categoria?: string;
+  tagIds?: number[];
   ordenarPor?: string;
   ordenarDescendente?: boolean;
   pagina?: number;
@@ -315,14 +319,14 @@ export const relatoriosService = {
     if (filtros?.titulo) {
       params.append('Titulo', filtros.titulo);
     }
+    if (filtros?.ano !== undefined) {
+      params.append('Ano', filtros.ano.toString());
+    }
     if (filtros?.dataPublicacao) {
       params.append('DataPublicacao', filtros.dataPublicacao);
     }
-    if (filtros?.caminho) {
-      params.append('Caminho', filtros.caminho);
-    }
-    if (filtros?.categoria) {
-      params.append('Categoria', filtros.categoria);
+    if (filtros?.tagIds && filtros.tagIds.length > 0) {
+      filtros.tagIds.forEach(tagId => params.append('TagIds', tagId.toString()));
     }
     if (filtros?.ordenarPor) {
       params.append('OrdenarPor', filtros.ordenarPor);

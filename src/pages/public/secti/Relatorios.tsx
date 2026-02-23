@@ -1,11 +1,12 @@
-import { PublicLayout } from '../../layouts/PublicLayout';
-import { HeroSection } from '../../components/HeroSection';
-import { DocumentosParceriasPublicosList } from '../../components/DocumentosParceriasPublicosList';
-import type { DocumentoParceriaPublicoItem } from '../../components/DocumentosParceriasPublicosList';
+  import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
+import { HeroSection } from '../../../components/HeroSection.tsx';
+import { DocumentosParceriasPublicosList } from '../../../components/DocumentosParceriasPublicosList.tsx';
+import type { DocumentoParceriaPublicoItem } from '../../../components/DocumentosParceriasPublicosList.tsx';
 import { useState, useEffect, useCallback } from 'react';
-import { useSEO } from '../../utils/useSEO.ts';
-import { relatoriosService } from '../../services/relatoriosService';
-import { handleApiError } from '../../utils/errorHandler';
+import { useSEO } from '../../../utils/useSEO.ts';
+import { relatoriosService } from '../../../services/relatoriosService.ts';
+import { tagService, type TagPublica } from '../../../services/tagService.ts';
+import { handleApiError } from '../../../utils/errorHandler.ts';
 
 export const Relatorios = () => {
   // SEO
@@ -21,9 +22,33 @@ export const Relatorios = () => {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [filtroTitulo, setFiltroTitulo] = useState('');
-  const [filtroData, setFiltroData] = useState('');
+  const [filtroAno, setFiltroAno] = useState<number | undefined>();
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroTagId, setFiltroTagId] = useState<number | undefined>();
+  const [tags, setTags] = useState<TagPublica[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
 
-  const carregarRelatorios = useCallback(async (pagina: number, titulo: string = '', dataPublicacao: string = '') => {
+  // Carregar tags no carregamento inicial
+  useEffect(() => {
+    const carregarTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await tagService.listarPublico({
+          pagina: 1,
+          itensPorPagina: 50,
+        });
+        const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
+        setTags(tagsOrdenadas);
+      } catch (err) {
+        console.error('Erro ao carregar tags:', err);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    carregarTags();
+  }, []);
+
+  const carregarRelatorios = useCallback(async (pagina: number, titulo: string = '', ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -31,7 +56,9 @@ export const Relatorios = () => {
       // Buscar relatórios públicos do endpoint
       const response = await relatoriosService.listarPublico({
         titulo: titulo || undefined,
+        ano: ano,
         dataPublicacao: dataPublicacao || undefined,
+        tagIds: tagIds,
         ordenarPor: 'anopublicacao',
         ordenarDescendente: true,
         pagina: pagina,
@@ -47,6 +74,7 @@ export const Relatorios = () => {
         categoria: 'Relatório',
         url: doc.caminhoArquivo,
         dataPublicacao: doc.dataPublicacao,
+        tags: doc.tags,
       }));
 
       setDocumentos(documentosFormatados);
@@ -61,23 +89,27 @@ export const Relatorios = () => {
   }, []);
 
   useEffect(() => {
-    carregarRelatorios(paginaAtual, filtroTitulo, filtroData);
-  }, [paginaAtual, filtroTitulo, filtroData, carregarRelatorios]);
+    carregarRelatorios(paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId ? [filtroTagId] : undefined);
+  }, [paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId, carregarRelatorios]);
 
   const handleMudarPagina = (novaPagina: number) => {
     setPaginaAtual(novaPagina);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleBuscar = (titulo: string, dataPublicacao?: string) => {
+  const handleBuscar = (titulo: string, ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
     setFiltroTitulo(titulo);
-    setFiltroData(dataPublicacao || '');
+    setFiltroAno(ano);
+    setFiltroDataPublicacao(dataPublicacao || '');
+    setFiltroTagId(tagIds && tagIds.length > 0 ? tagIds[0] : undefined);
     setPaginaAtual(1);
   };
 
   const handleLimpar = () => {
     setFiltroTitulo('');
-    setFiltroData('');
+    setFiltroAno(undefined);
+    setFiltroDataPublicacao('');
+    setFiltroTagId(undefined);
     setPaginaAtual(1);
   };
 
@@ -110,7 +142,9 @@ export const Relatorios = () => {
       {/* Documents List */}
       <DocumentosParceriasPublicosList
         documents={documentos}
+        tags={tags}
         isLoading={isLoading}
+        isLoadingTags={isLoadingTags}
         totalPaginas={totalPaginas}
         paginaAtual={paginaAtual}
         onMudarPagina={handleMudarPagina}

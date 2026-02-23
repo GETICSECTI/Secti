@@ -5,6 +5,7 @@ import type { DocumentoParceriaPublicoItem } from '../../../components/Documento
 import { useState, useEffect, useCallback } from 'react';
 import { useSEO } from '../../../utils/useSEO.ts';
 import { legislacaoService } from '../../../services/legislacaoService';
+import { tagService, type TagPublica } from '../../../services/tagService.ts';
 import { handleApiError } from '../../../utils/errorHandler';
 
 export const Legislacao = () => {
@@ -21,9 +22,33 @@ export const Legislacao = () => {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [filtroTitulo, setFiltroTitulo] = useState('');
-  const [filtroData, setFiltroData] = useState('');
+  const [filtroAno, setFiltroAno] = useState<number | undefined>();
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroTagId, setFiltroTagId] = useState<number | undefined>();
+  const [tags, setTags] = useState<TagPublica[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
 
-  const carregarLegislacao = useCallback(async (pagina: number, titulo: string = '', dataPublicacao: string = '') => {
+  // Carregar tags no carregamento inicial
+  useEffect(() => {
+    const carregarTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await tagService.listarPublico({
+          pagina: 1,
+          itensPorPagina: 50,
+        });
+        const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
+        setTags(tagsOrdenadas);
+      } catch (err) {
+        console.error('Erro ao carregar tags:', err);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    carregarTags();
+  }, []);
+
+  const carregarLegislacao = useCallback(async (pagina: number, titulo: string = '', ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -31,7 +56,9 @@ export const Legislacao = () => {
       // Buscar legislação pública do endpoint
       const response = await legislacaoService.listarPublico({
         titulo: titulo || undefined,
+        ano: ano,
         dataPublicacao: dataPublicacao || undefined,
+        tagIds: tagIds,
         ordenarPor: 'anopublicacao',
         ordenarDescendente: true,
         pagina: pagina,
@@ -47,6 +74,7 @@ export const Legislacao = () => {
         categoria: 'Legislação',
         url: doc.caminhoArquivo,
         dataPublicacao: doc.dataPublicacao,
+        tags: doc.tags,
       }));
 
       setDocumentos(documentosFormatados);
@@ -61,23 +89,27 @@ export const Legislacao = () => {
   }, []);
 
   useEffect(() => {
-    carregarLegislacao(paginaAtual, filtroTitulo, filtroData);
-  }, [paginaAtual, filtroTitulo, filtroData, carregarLegislacao]);
+    carregarLegislacao(paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId ? [filtroTagId] : undefined);
+  }, [paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId, carregarLegislacao]);
 
   const handleMudarPagina = (novaPagina: number) => {
     setPaginaAtual(novaPagina);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleBuscar = (titulo: string, dataPublicacao?: string) => {
+  const handleBuscar = (titulo: string, ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
     setFiltroTitulo(titulo);
-    setFiltroData(dataPublicacao || '');
+    setFiltroAno(ano);
+    setFiltroDataPublicacao(dataPublicacao || '');
+    setFiltroTagId(tagIds && tagIds.length > 0 ? tagIds[0] : undefined);
     setPaginaAtual(1);
   };
 
   const handleLimpar = () => {
     setFiltroTitulo('');
-    setFiltroData('');
+    setFiltroAno(undefined);
+    setFiltroDataPublicacao('');
+    setFiltroTagId(undefined);
     setPaginaAtual(1);
   };
 
@@ -95,7 +127,7 @@ export const Legislacao = () => {
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold text-[#0C2856] mb-4">Marco Legal</h2>
             <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Consulte toda a legislação pertinente ao Sistema Estadual de Ciência, Tecnologia e Inovação de Pernambuco,
+                Consulte toda a legislação pertinente ao Sistema Estadual de Ciência, Tecnologia e Inovação de Pernambuco,
               incluindo leis, decretos, portarias e demais normas regulamentares.
             </p>
           </div>
@@ -110,7 +142,9 @@ export const Legislacao = () => {
       {/* Documents List */}
       <DocumentosParceriasPublicosList
         documents={documentos}
+        tags={tags}
         isLoading={isLoading}
+        isLoadingTags={isLoadingTags}
         totalPaginas={totalPaginas}
         paginaAtual={paginaAtual}
         onMudarPagina={handleMudarPagina}
