@@ -9,59 +9,38 @@
  */
 export const formatarDataBrasileira = (dateString: string | Date): string => {
   try {
-    let date: Date;
-
     if (typeof dateString === 'string') {
-      // Normalizar a string de data para evitar problemas com diferentes precisões de milissegundos
-      let normalizedDateString = dateString.trim();
+      // Extrair apenas a data (YYYY-MM-DD) da string, evitando problemas com fuso horário
+      const dateMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
-      // Se contém 'T', é formato ISO com hora
-      if (normalizedDateString.includes('T')) {
-        // Extrair a parte da data (YYYY-MM-DD) e hora
-        const tIndex = normalizedDateString.indexOf('T');
-        const datePart = normalizedDateString.substring(0, tIndex); // YYYY-MM-DD
-        const timePart = normalizedDateString.substring(tIndex + 1); // HH:mm:ss.xxxxxxZ ou HH:mm:ssZ
-
-        // Remover 'Z' do final
-        const timeWithoutZ = timePart.replace(/Z$/, '');
-        const timeParts = timeWithoutZ.split('.');
-
-        if (timeParts.length === 2) {
-          // Tem milissegundos - pegar apenas os primeiros 3 dígitos
-          const hms = timeParts[0]; // HH:mm:ss
-          const milliseconds = timeParts[1].substring(0, 3); // Primeiros 3 dígitos
-          normalizedDateString = `${datePart}T${hms}.${milliseconds}Z`;
-        } else {
-          // Não tem milissegundos - construir sem eles
-          normalizedDateString = `${datePart}T${timeWithoutZ}Z`;
-        }
+      if (dateMatch) {
+        const [, ano, mes, dia] = dateMatch;
+        return `${dia}/${mes}/${ano}`;
       }
 
-      date = new Date(normalizedDateString);
-
+      // Fallback para interpretação com Date se não conseguir extrair
+      const date = new Date(dateString);
       if (isNaN(date.getTime())) {
-        // Se falhar, tentar extrair apenas a data (YYYY-MM-DD)
-        const dateMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (dateMatch) {
-          const [, ano, mes, dia] = dateMatch.map(Number);
-          date = new Date(ano, mes - 1, dia);
-        } else {
-          return 'Data inválida';
-        }
+        return 'Data inválida';
       }
+
+      const diaNum = date.getDate().toString().padStart(2, '0');
+      const mesNum = (date.getMonth() + 1).toString().padStart(2, '0');
+      const anoNum = date.getFullYear();
+
+      return `${diaNum}/${mesNum}/${anoNum}`;
     } else {
-      date = dateString;
+      // Se for Date, usar getDate/getMonth/getFullYear
+      if (isNaN(dateString.getTime())) {
+        return 'Data inválida';
+      }
+
+      const dia = dateString.getDate().toString().padStart(2, '0');
+      const mes = (dateString.getMonth() + 1).toString().padStart(2, '0');
+      const ano = dateString.getFullYear();
+
+      return `${dia}/${mes}/${ano}`;
     }
-
-    if (isNaN(date.getTime())) {
-      return 'Data inválida';
-    }
-
-    const dia = date.getDate().toString().padStart(2, '0');
-    const mes = (date.getMonth() + 1).toString().padStart(2, '0');
-    const ano = date.getFullYear();
-
-    return `${dia}/${mes}/${ano}`;
   } catch (error) {
     console.error('Erro ao formatar data:', error);
     return 'Data inválida';
@@ -75,64 +54,50 @@ export const formatarDataBrasileira = (dateString: string | Date): string => {
  */
 export const formatarDataPorExtenso = (dateString: string | Date): string => {
   try {
-    let date: Date;
-
     if (typeof dateString === 'string') {
-      // Normalizar a string de data para evitar problemas com diferentes precisões de milissegundos
-      let normalizedDateString = dateString.trim();
+      // Extrair apenas a data (YYYY-MM-DD) da string, evitando problemas com fuso horário
+      const dateMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
-      // Se contém 'T', é formato ISO com hora
-      if (normalizedDateString.includes('T')) {
-        // Extrair a parte da data (YYYY-MM-DD) e hora
-        const tIndex = normalizedDateString.indexOf('T');
-        const datePart = normalizedDateString.substring(0, tIndex); // YYYY-MM-DD
-        const timePart = normalizedDateString.substring(tIndex + 1); // HH:mm:ss.xxxxxxZ ou HH:mm:ssZ
-
-        // Remover 'Z' do final
-        const timeWithoutZ = timePart.replace(/Z$/, '');
-        const timeParts = timeWithoutZ.split('.');
-
-        if (timeParts.length === 2) {
-          // Tem milissegundos - pegar apenas os primeiros 3 dígitos
-          const hms = timeParts[0]; // HH:mm:ss
-          const milliseconds = timeParts[1].substring(0, 3); // Primeiros 3 dígitos
-          normalizedDateString = `${datePart}T${hms}.${milliseconds}Z`;
-        } else {
-          // Não tem milissegundos - construir sem eles
-          normalizedDateString = `${datePart}T${timeWithoutZ}Z`;
-        }
+      if (dateMatch) {
+        const [, ano, mes, dia] = dateMatch.map(Number);
+        const meses = [
+          'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+          'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+        ];
+        return `${dia} de ${meses[mes - 1]} de ${ano}`;
       }
 
-      date = new Date(normalizedDateString);
-
+      // Fallback para interpretação com Date se não conseguir extrair
+      const date = new Date(dateString);
       if (isNaN(date.getTime())) {
-        // Se falhar, tentar extrair apenas a data (YYYY-MM-DD)
-        const dateMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (dateMatch) {
-          const [, ano, mes, dia] = dateMatch.map(Number);
-          date = new Date(ano, mes - 1, dia);
-        } else {
-          return 'Data inválida';
-        }
+        return 'Data inválida';
       }
+
+      const diaNum = date.getDate();
+      const mesNum = date.getMonth();
+      const anoNum = date.getFullYear();
+      const meses = [
+        'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+        'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+      ];
+      return `${diaNum} de ${meses[mesNum]} de ${anoNum}`;
     } else {
-      date = dateString;
+      // Se for Date, usar getDate/getMonth/getFullYear
+      if (isNaN(dateString.getTime())) {
+        return 'Data inválida';
+      }
+
+      const dia = dateString.getDate();
+      const mes = dateString.getMonth();
+      const ano = dateString.getFullYear();
+
+      const meses = [
+        'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+        'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+      ];
+
+      return `${dia} de ${meses[mes]} de ${ano}`;
     }
-
-    if (isNaN(date.getTime())) {
-      return 'Data inválida';
-    }
-
-    const dia = date.getDate();
-    const mes = date.getMonth();
-    const ano = date.getFullYear();
-
-    const meses = [
-      'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
-    ];
-
-    return `${dia} de ${meses[mes]} de ${ano}`;
   } catch (error) {
     console.error('Erro ao formatar data por extenso:', error);
     return 'Data inválida';
@@ -146,51 +111,24 @@ export const formatarDataPorExtenso = (dateString: string | Date): string => {
  */
 export const extrairAno = (dateString: string | Date): number => {
   try {
-    let date: Date;
-
     if (typeof dateString === 'string') {
-      // Normalizar a string de data para evitar problemas com diferentes precisões de milissegundos
-      let normalizedDateString = dateString.trim();
+      // Extrair apenas a data (YYYY-MM-DD) da string, evitando problemas com fuso horário
+      const dateMatch = dateString.match(/^(\d{4})-/);
 
-      // Se contém 'T', é formato ISO com hora
-      if (normalizedDateString.includes('T')) {
-        // Extrair a parte da data (YYYY-MM-DD) e hora
-        const tIndex = normalizedDateString.indexOf('T');
-        const datePart = normalizedDateString.substring(0, tIndex); // YYYY-MM-DD
-        const timePart = normalizedDateString.substring(tIndex + 1); // HH:mm:ss.xxxxxxZ ou HH:mm:ssZ
-
-        // Remover 'Z' do final
-        const timeWithoutZ = timePart.replace(/Z$/, '');
-        const timeParts = timeWithoutZ.split('.');
-
-        if (timeParts.length === 2) {
-          // Tem milissegundos - pegar apenas os primeiros 3 dígitos
-          const hms = timeParts[0]; // HH:mm:ss
-          const milliseconds = timeParts[1].substring(0, 3); // Primeiros 3 dígitos
-          normalizedDateString = `${datePart}T${hms}.${milliseconds}Z`;
-        } else {
-          // Não tem milissegundos - construir sem eles
-          normalizedDateString = `${datePart}T${timeWithoutZ}Z`;
-        }
+      if (dateMatch) {
+        return Number(dateMatch[1]);
       }
 
-      date = new Date(normalizedDateString);
-
-      if (isNaN(date.getTime())) {
-        // Se falhar, tentar extrair apenas a data (YYYY-MM-DD)
-        const dateMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (dateMatch) {
-          const [, ano] = dateMatch.map(Number);
-          return ano;
-        } else {
-          return new Date().getFullYear();
-        }
+      // Fallback para interpretação com Date se não conseguir extrair
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return date.getFullYear();
       }
+
+      return new Date().getFullYear();
     } else {
-      date = dateString;
+      return dateString.getFullYear();
     }
-
-    return date.getFullYear();
   } catch (error) {
     console.error('Erro ao extrair ano:', error);
     return new Date().getFullYear();

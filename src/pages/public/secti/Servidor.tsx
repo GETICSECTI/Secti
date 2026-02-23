@@ -5,6 +5,7 @@ import type { DocumentoServidorPublicoItem } from '../../../components/Documento
 import { useState, useEffect, useCallback } from 'react';
 import { useSEO } from '../../../utils/useSEO.ts';
 import { documentosServidorService } from '../../../services/documentosServidorService';
+import { tagService, type TagPublica } from '../../../services/tagService.ts';
 import { handleApiError } from '../../../utils/errorHandler';
 
 
@@ -22,19 +23,42 @@ export const Servidor = () => {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [filtroTitulo, setFiltroTitulo] = useState('');
-  const [filtroData, setFiltroData] = useState<string>('');
+  const [filtroAno, setFiltroAno] = useState<number | undefined>();
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroTagId, setFiltroTagId] = useState<number | undefined>();
+  const [tags, setTags] = useState<TagPublica[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
 
-  const carregarDocumentos = useCallback(async (pagina: number, titulo?: string, dataPublicacao?: string) => {
+  // Carregar tags no carregamento inicial
+  useEffect(() => {
+    const carregarTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await tagService.listarPublico({
+          pagina: 1,
+          itensPorPagina: 50,
+        });
+        const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
+        setTags(tagsOrdenadas);
+      } catch (err) {
+        console.error('Erro ao carregar tags:', err);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    carregarTags();
+  }, []);
+  const carregarDocumentos = useCallback(async (pagina: number, titulo: string = '', ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
     try {
       setIsLoading(true);
       setError(null);
 
       // Buscar documentos do servidor públicos do endpoint
       const response = await documentosServidorService.listarPublico({
-        titulo: titulo,
-        dataPublicacao: dataPublicacao,
-        ordenarPor: 'anopublicacao',
-        ordenarDescendente: true,
+        titulo: titulo || undefined,
+        ano: ano,
+        dataPublicacao: dataPublicacao || undefined,
+        tagIds: tagIds,
         pagina: pagina,
         itensPorPagina: 10,
       });
@@ -48,6 +72,7 @@ export const Servidor = () => {
         categoria: 'Documentos',
         url: doc.caminhoArquivo,
         dataPublicacao: doc.dataPublicacao,
+        tags: doc.tags,
       }));
 
       setDocumentos(documentosFormatados);
@@ -62,23 +87,27 @@ export const Servidor = () => {
   }, []);
 
   useEffect(() => {
-    carregarDocumentos(paginaAtual, filtroTitulo || undefined, filtroData || undefined);
-  }, [paginaAtual, filtroTitulo, filtroData, carregarDocumentos]);
+    carregarDocumentos(paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId ? [filtroTagId] : undefined);
+  }, [paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId, carregarDocumentos]);
 
   const handleMudarPagina = (novaPagina: number) => {
     setPaginaAtual(novaPagina);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleFiltroChange = (titulo: string, dataPublicacao?: string) => {
+  const handleFiltroChange = (titulo: string, ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
     setFiltroTitulo(titulo);
-    setFiltroData(dataPublicacao || '');
+    setFiltroAno(ano);
+    setFiltroDataPublicacao(dataPublicacao || '');
+    setFiltroTagId(tagIds && tagIds.length > 0 ? tagIds[0] : undefined);
     setPaginaAtual(1);
   };
 
   const handleLimpar = () => {
     setFiltroTitulo('');
-    setFiltroData('');
+    setFiltroAno(undefined);
+    setFiltroDataPublicacao('');
+    setFiltroTagId(undefined);
     setPaginaAtual(1);
   };
 
@@ -108,17 +137,20 @@ export const Servidor = () => {
               </div>
             )}
 
-            {/* Documents List */}
-            <DocumentosServidorPublicosList
-              documents={documentos}
-              isLoading={isLoading}
-              totalPaginas={totalPaginas}
-              paginaAtual={paginaAtual}
-              onMudarPagina={handleMudarPagina}
-              onFiltroChange={handleFiltroChange}
-              onLimpar={handleLimpar}
-            />
-          </div>
+        {!error && (
+          <DocumentosServidorPublicosList
+            documents={documentos}
+            tags={tags}
+            isLoading={isLoading}
+            isLoadingTags={isLoadingTags}
+            totalPaginas={totalPaginas}
+            paginaAtual={paginaAtual}
+            onMudarPagina={handleMudarPagina}
+            onFiltroChange={handleFiltroChange}
+            onLimpar={handleLimpar}
+          />
+        )}
+        </div>
         </div>
       </section>
     </PublicLayout>

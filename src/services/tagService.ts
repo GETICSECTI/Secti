@@ -33,6 +33,25 @@ export interface ListarTagsFilters {
   itensPorPagina?: number;
 }
 
+export interface TagPublica {
+  id: number;
+  nome: string;
+}
+
+export interface ListarTagsPublicasResponse {
+  tags: TagPublica[];
+  totalItens: number;
+  pagina: number;
+  itensPorPagina: number;
+  totalPaginas: number;
+}
+
+export interface ListarTagsPublicasFilters {
+  nome?: string;
+  pagina?: number;
+  itensPorPagina?: number;
+}
+
 // ==================== VALIDAÇÕES ====================
 
 const validarNome = (nome: string): string[] => {
@@ -94,6 +113,33 @@ export const tagService = {
 
     try {
       const response = await apiClient.get<ListarTagsResponse>(url);
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  /**
+   * Lista tags de forma pública (sem autenticação)
+   */
+  listarPublico: async (filtros?: ListarTagsPublicasFilters): Promise<ListarTagsPublicasResponse> => {
+    const params = new URLSearchParams();
+
+    if (filtros?.nome) {
+      params.append('Nome', filtros.nome);
+    }
+    if (filtros?.pagina !== undefined) {
+      params.append('Pagina', filtros.pagina.toString());
+    }
+    if (filtros?.itensPorPagina !== undefined) {
+      params.append('ItensPorPagina', filtros.itensPorPagina.toString());
+    }
+
+    const queryString = params.toString();
+    const url = `/Tag/listar-publico${queryString ? `?${queryString}` : ''}`;
+
+    try {
+      const response = await apiClient.get<ListarTagsPublicasResponse>(url);
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));

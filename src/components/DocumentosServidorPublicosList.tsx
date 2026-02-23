@@ -10,21 +10,29 @@ export interface DocumentoServidorPublicoItem {
   categoria: string;
   url: string;
   dataPublicacao: string;
+  tags?: Array<{
+    id: number;
+    nome: string;
+  }>;
 }
 
 interface DocumentosServidorPublicosListProps {
   documents: DocumentoServidorPublicoItem[];
+  tags?: Array<{ id: number; nome: string }>;
   isLoading?: boolean;
+  isLoadingTags?: boolean;
   totalPaginas?: number;
   paginaAtual?: number;
   onMudarPagina?: (pagina: number) => void;
-  onFiltroChange?: (titulo: string, dataPublicacao?: string) => void;
+  onFiltroChange?: (titulo: string, ano?: number, dataPublicacao?: string, tagIds?: number[]) => void;
   onLimpar?: () => void;
 }
 
 export const DocumentosServidorPublicosList = ({
   documents,
+  tags = [],
   isLoading = false,
+  isLoadingTags = false,
   totalPaginas = 1,
   paginaAtual = 1,
   onMudarPagina,
@@ -32,7 +40,9 @@ export const DocumentosServidorPublicosList = ({
   onLimpar,
 }: DocumentosServidorPublicosListProps) => {
   const [filtroNome, setFiltroNome] = useState('');
-  const [filtroData, setFiltroData] = useState('');
+  const [filtroAno, setFiltroAno] = useState<number | ''>('');
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState('');
+  const [filtroTagId, setFiltroTagId] = useState<number | ''>('');
   const [filtrosAplicados, setFiltrosAplicados] = useState(false);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
@@ -40,13 +50,20 @@ export const DocumentosServidorPublicosList = ({
   const handleBuscar = () => {
     setFiltrosAplicados(true);
     onMudarPagina?.(1);
-    onFiltroChange?.(filtroNome, filtroData);
+    onFiltroChange?.(
+      filtroNome,
+      filtroAno ? Number(filtroAno) : undefined,
+      filtroDataPublicacao || undefined,
+      filtroTagId ? [Number(filtroTagId)] : undefined
+    );
   };
 
   // Função para limpar filtros
   const handleLimparFiltros = () => {
     setFiltroNome('');
-    setFiltroData('');
+    setFiltroAno('');
+    setFiltroDataPublicacao('');
+    setFiltroTagId('');
     setFiltrosAplicados(false);
     onMudarPagina?.(1);
     onLimpar?.();
@@ -104,8 +121,9 @@ export const DocumentosServidorPublicosList = ({
       {/* Filtros */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Buscar Documentos</h3>
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          {/* Título */}
+          <div>
             <label htmlFor="busca" className="block text-sm font-medium text-gray-700 mb-2">
               Título do Documento
             </label>
@@ -127,6 +145,25 @@ export const DocumentosServidorPublicosList = ({
             </div>
           </div>
 
+          {/* Ano */}
+          <div>
+            <label htmlFor="ano" className="block text-sm font-medium text-gray-700 mb-2">
+              Ano
+            </label>
+            <input
+              type="number"
+              id="ano"
+              value={filtroAno}
+              onChange={(e) => setFiltroAno(e.target.value === '' ? '' : Number(e.target.value))}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleBuscar(); }}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Ex: 2024"
+              min="1900"
+              max={new Date().getFullYear()}
+            />
+          </div>
+
+          {/* Data de Publicação */}
           <div>
             <label htmlFor="dataPublicacao" className="block text-sm font-medium text-gray-700 mb-2">
               Data de Publicação
@@ -134,28 +171,55 @@ export const DocumentosServidorPublicosList = ({
             <input
               type="date"
               id="dataPublicacao"
-              value={filtroData}
-              onChange={(e) => setFiltroData(e.target.value)}
+              value={filtroDataPublicacao}
+              onChange={(e) => setFiltroDataPublicacao(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleBuscar(); }}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleBuscar}
-              disabled={isLoading || (!filtroNome && !filtroData)}
-              className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          {/* Tags */}
+          <div>
+            <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
+              Tags
+            </label>
+            <select
+              id="tags"
+              value={filtroTagId}
+              onChange={(e) => setFiltroTagId(e.target.value === '' ? '' : Number(e.target.value))}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {isLoading ? 'Buscando...' : 'Buscar'}
-            </button>
-            <button
-              onClick={handleLimparFiltros}
-              disabled={isLoading || !filtrosAplicados}
-              className="px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              Limpar
-            </button>
+              <option value="">Selecione uma tag</option>
+              {isLoadingTags ? (
+                <option disabled>Carregando tags...</option>
+              ) : tags.length === 0 ? (
+                <option disabled>Nenhuma tag disponível</option>
+              ) : (
+                tags.map(tag => (
+                  <option key={tag.id} value={tag.id}>
+                    {tag.nome}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleBuscar}
+            disabled={isLoading || (!filtroNome && !filtroAno && !filtroDataPublicacao && !filtroTagId)}
+            className="cursor-pointer bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            {isLoading ? 'Buscando...' : 'Buscar'}
+          </button>
+          <button
+            onClick={handleLimparFiltros}
+            disabled={isLoading || !filtrosAplicados}
+            className="px-6 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            Limpar
+          </button>
         </div>
       </div>
 
@@ -182,7 +246,7 @@ export const DocumentosServidorPublicosList = ({
                   {/* Informações do documento */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-[#0C2856] mb-2">{doc.nome}</h3>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-2">
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -195,10 +259,17 @@ export const DocumentosServidorPublicosList = ({
                         </svg>
                         <strong>Publicado em:</strong> {formatarDataBrasileira(doc.dataPublicacao)}
                       </span>
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#0C2856] text-white">
-                        {doc.categoria}
-                      </span>
                     </div>
+                    {/* Tags */}
+                    {doc.tags && doc.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {doc.tags.map(tag => (
+                          <span key={tag.id} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#0C2856] text-white">
+                            {tag.nome}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Botão de Download */}

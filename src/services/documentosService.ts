@@ -74,6 +74,10 @@ export interface DocumentoPublicoItem {
   titulo: string;
   caminhoArquivo: string;
   dataPublicacao: string; // Data completa do backend
+  tags?: Array<{
+    id: number;
+    nome: string;
+  }>;
 }
 
 export interface DocumentoPublicoListResponse {
@@ -125,7 +129,9 @@ export interface DocumentoPublicoFilters {
   pastaId?: number;
   categoria?: string;
   titulo?: string;
+  ano?: number;
   dataPublicacao?: string;
+  tagIds?: number[];
   ordenarPor?: 'titulo' | 'anopublicacao';
   ordenarDescendente?: boolean;
   pagina?: number;
@@ -313,8 +319,14 @@ export const documentosService = {
     if (filtros?.titulo) {
       params.append('Titulo', filtros.titulo);
     }
+    if (filtros?.ano !== undefined) {
+      params.append('Ano', filtros.ano.toString());
+    }
     if (filtros?.dataPublicacao) {
       params.append('DataPublicacao', filtros.dataPublicacao);
+    }
+    if (filtros?.tagIds && filtros.tagIds.length > 0) {
+      filtros.tagIds.forEach(tagId => params.append('TagIds', tagId.toString()));
     }
     if (filtros?.ordenarPor) {
       params.append('OrdenarPor', filtros.ordenarPor);

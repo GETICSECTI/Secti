@@ -96,6 +96,10 @@ export interface DocumentoServidorPublicoItem {
   titulo: string;
   caminhoArquivo: string;
   dataPublicacao: string; // Data completa do backend
+  tags?: Array<{
+    id: number;
+    nome: string;
+  }>;
 }
 
 export interface DocumentoServidorPublicoListResponse {
@@ -108,11 +112,9 @@ export interface DocumentoServidorPublicoListResponse {
 
 export interface DocumentoServidorPublicoFilters {
   titulo?: string;
+  ano?: number;
   dataPublicacao?: string;
-  caminho?: string;
-  categoria?: string;
-  ordenarPor?: string;
-  ordenarDescendente?: boolean;
+  tagIds?: number[];
   pagina?: number;
   itensPorPagina?: number;
 }
@@ -357,20 +359,14 @@ export const documentosServidorService = {
     if (filtros?.titulo) {
       params.append('Titulo', filtros.titulo);
     }
+    if (filtros?.ano !== undefined) {
+      params.append('Ano', filtros.ano.toString());
+    }
     if (filtros?.dataPublicacao) {
       params.append('DataPublicacao', filtros.dataPublicacao);
     }
-    if (filtros?.caminho) {
-      params.append('Caminho', filtros.caminho);
-    }
-    if (filtros?.categoria) {
-      params.append('Categoria', filtros.categoria);
-    }
-    if (filtros?.ordenarPor) {
-      params.append('OrdenarPor', filtros.ordenarPor);
-    }
-    if (filtros?.ordenarDescendente !== undefined) {
-      params.append('OrdenarDescendente', filtros.ordenarDescendente.toString());
+    if (filtros?.tagIds && filtros.tagIds.length > 0) {
+      filtros.tagIds.forEach(tagId => params.append('TagIds', tagId.toString()));
     }
     if (filtros?.pagina !== undefined) {
       params.append('Pagina', filtros.pagina.toString());
