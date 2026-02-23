@@ -8,7 +8,16 @@ import { handleApiError } from '../../../utils/errorHandler';
 
 export const ListarParcerias = () => {
   const [parcerias, setParcerias] = useState<Parceria[]>([]);
+  const [filtroId, setFiltroId] = useState<string>('');
   const [filtroCategoria, setFiltroCategoria] = useState<string>('');
+  const [filtroCaminho, setFiltroCaminho] = useState<string>('');
+  const [filtroAno, setFiltroAno] = useState<string>('');
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroDataCriacao, setFiltroDataCriacao] = useState<string>('');
+  const [filtroDataAtualizacao, setFiltroDataAtualizacao] = useState<string>('');
+  const [filtroAtivo, setFiltroAtivo] = useState<string>('Todas');
+  const [filtroUsuarioCriacaoId, setFiltroUsuarioCriacaoId] = useState<string>('');
+  const [filtroUsuarioAtualizacaoId, setFiltroUsuarioAtualizacaoId] = useState<string>('');
   const [busca, setBusca] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
@@ -18,6 +27,9 @@ export const ListarParcerias = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [appliedFiltros, setAppliedFiltros] = useState<ParceriaListFilters | undefined>(undefined);
+  const [ordenarPor] = useState<string>('titulo');
+  const [ordenarDescendente] = useState<boolean>(false);
 
   const getTipoFromNome = (nomeArquivo?: string, caminhoArquivo?: string): Parceria['tipo'] => {
     const origem = nomeArquivo || caminhoArquivo || '';
@@ -30,22 +42,72 @@ export const ListarParcerias = () => {
     return 'outro';
   };
 
-  // Carregar parcerias com paginação servidor
-  const carregarParcerias = useCallback(async (page = 1, categoriaFiltro?: string) => {
+  // Verifica se um objeto de filtros contém algum filtro significativo
+  const hasFiltersObject = (filtros: ParceriaListFilters | undefined) => {
+    if (!filtros) return false;
+    const keys = Object.keys(filtros).filter(k => k !== 'pagina' && k !== 'itensPorPagina' && k !== 'ordenarPor' && k !== 'ordenarDescendente');
+    return keys.some(k => {
+      const v = (filtros as Record<string, unknown>)[k];
+      if (v === undefined || v === null) return false;
+      if (typeof v === 'string') return String(v).trim() !== '';
+      return true;
+    });
+  };
+
+  const hasAnyFilterApplied = () => {
+    const uiHas = Boolean(
+      busca.trim() ||
+      filtroCategoria ||
+      filtroCaminho ||
+      filtroAno ||
+      filtroId ||
+      filtroDataPublicacao ||
+      filtroDataCriacao ||
+      filtroDataAtualizacao ||
+      (filtroAtivo !== 'Todas') ||
+      filtroUsuarioCriacaoId ||
+      filtroUsuarioAtualizacaoId
+    );
+    const serverHas = hasFiltersObject(appliedFiltros);
+    return uiHas || serverHas;
+  };
+
+  const getCurrentFilters = () => {
+    if (hasAnyFilterApplied()) {
+      return {
+        id: filtroId ? Number(filtroId) : undefined,
+        titulo: busca.trim() || undefined,
+        categoria: filtroCategoria || undefined,
+        caminho: filtroCaminho || undefined,
+        ano: filtroAno ? Number(filtroAno) : undefined,
+        dataPublicacao: filtroDataPublicacao || undefined,
+        dataCriacao: filtroDataCriacao || undefined,
+        dataAtualizacao: filtroDataAtualizacao || undefined,
+        ativo: filtroAtivo === 'Sim' ? true : filtroAtivo === 'Nao' ? false : undefined,
+        usuarioCriacaoId: filtroUsuarioCriacaoId ? Number(filtroUsuarioCriacaoId) : undefined,
+        usuarioAtualizacaoId: filtroUsuarioAtualizacaoId ? Number(filtroUsuarioAtualizacaoId) : undefined,
+        ordenarPor: ordenarPor,
+        ordenarDescendente: ordenarDescendente,
+        itensPorPagina: itemsPerPage,
+      } as Partial<ParceriaListFilters>;
+    }
+    if (appliedFiltros) return appliedFiltros;
+    return {} as Partial<ParceriaListFilters>;
+  };
+
+  // Carregar parcerias com paginação no servidor (aceita filtros extras)
+  const carregarParcerias = useCallback(async (page = 1, filtrosExtra?: Partial<ParceriaListFilters>) => {
     setIsLoading(true);
     setErro(null);
     try {
       const filtros: ParceriaListFilters = {
-        ordenarPor: 'titulo',
-        ordenarDescendente: false,
-        apenasAtivas: true,
+        ordenarPor: filtrosExtra?.ordenarPor || ordenarPor || 'titulo',
+        ordenarDescendente: filtrosExtra?.ordenarDescendente !== undefined ? filtrosExtra!.ordenarDescendente! : ordenarDescendente ?? false,
+        apenasAtivas: filtrosExtra?.apenasAtivas !== undefined ? filtrosExtra!.apenasAtivas! : true,
         pagina: page,
-        itensPorPagina: itemsPerPage,
-      };
-
-      if (categoriaFiltro) {
-        filtros.categoria = categoriaFiltro;
-      }
+        itensPorPagina: filtrosExtra?.itensPorPagina || itemsPerPage,
+        ...(filtrosExtra || {}),
+      } as ParceriaListFilters;
 
       const response: ParceriaListResponse = await parceriasService.listar(filtros);
 
@@ -63,13 +125,14 @@ export const ListarParcerias = () => {
       setParcerias(parceriasFormatadas);
       setTotalItens(response.totalItens);
       setCurrentPage(page);
+      setAppliedFiltros(hasFiltersObject(filtros) ? filtros : undefined);
     } catch (error) {
       const mensagemErro = handleApiError(error);
       setErro(mensagemErro);
     } finally {
       setIsLoading(false);
     }
-  }, [itemsPerPage]);
+  }, [itemsPerPage, ordenarPor, ordenarDescendente]);
 
   const carregarTags = useCallback(async () => {
     setIsLoadingTags(true);
@@ -100,13 +163,25 @@ export const ListarParcerias = () => {
 
   // Buscar parcerias via endpoint
   const handleSearch = () => {
-    carregarParcerias(1, filtroCategoria || undefined);
+    setCurrentPage(1);
+    const filtros = getCurrentFilters();
+    carregarParcerias(1, filtros);
   };
 
   // Limpar filtros
   const handleClearSearch = () => {
     setBusca('');
+    setFiltroId('');
     setFiltroCategoria('');
+    setFiltroCaminho('');
+    setFiltroAno('');
+    setFiltroDataPublicacao('');
+    setFiltroDataCriacao('');
+    setFiltroDataAtualizacao('');
+    setFiltroAtivo('Todas');
+    setFiltroUsuarioCriacaoId('');
+    setFiltroUsuarioAtualizacaoId('');
+    setAppliedFiltros(undefined);
     carregarParcerias(1, undefined);
   };
 
@@ -114,7 +189,8 @@ export const ListarParcerias = () => {
     try {
       await parceriasService.inativar(id);
       // Recarregar lista mantendo filtros
-      await carregarParcerias(currentPage, filtroCategoria || undefined);
+      const current = getCurrentFilters();
+      await carregarParcerias(currentPage, current as Partial<ParceriaListFilters>);
     } catch (error) {
       const mensagemErro = handleApiError(error);
       setErro(mensagemErro);
@@ -208,22 +284,132 @@ export const ListarParcerias = () => {
               )}
             </div>
 
-            {/* Botões de ação */}
-            <div className="md:col-span-2 flex gap-2">
-              <button
-                onClick={handleSearch}
-                disabled={isLoading || (!busca.trim() && !filtroCategoria)}
-                className="flex-1 cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {isLoading ? 'Buscando...' : 'Buscar'}
-              </button>
-              <button
-                onClick={handleClearSearch}
-                disabled={isLoading || (!busca.trim() && !filtroCategoria)}
-                className="px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                Limpar
-              </button>
+            {/* Filtros adicionais */}
+            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* ID */}
+              <div>
+                <label htmlFor="filtroId" className="block text-sm font-medium text-gray-700 mb-2">
+                  ID
+                </label>
+                <input
+                  type="text"
+                  id="filtroId"
+                  value={filtroId}
+                  onChange={(e) => setFiltroId(e.target.value)}
+                  placeholder="Digite o ID da parceria..."
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Caminho */}
+              <div>
+                <label htmlFor="filtroCaminho" className="block text-sm font-medium text-gray-700 mb-2">
+                  Caminho
+                </label>
+                <input
+                  type="text"
+                  id="filtroCaminho"
+                  value={filtroCaminho}
+                  onChange={(e) => setFiltroCaminho(e.target.value)}
+                  placeholder="Digite o caminho da parceria..."
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Ano */}
+              <div>
+                <label htmlFor="filtroAno" className="block text-sm font-medium text-gray-700 mb-2">
+                  Ano
+                </label>
+                <input
+                  type="text"
+                  id="filtroAno"
+                  value={filtroAno}
+                  onChange={(e) => setFiltroAno(e.target.value)}
+                  placeholder="Digite o ano da parceria..."
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Data de Publicação */}
+              <div>
+                <label htmlFor="filtroDataPublicacao" className="block text-sm font-medium text-gray-700 mb-2">
+                  Data de Publicação
+                </label>
+                <input
+                  type="text"
+                  id="filtroDataPublicacao"
+                  value={filtroDataPublicacao}
+                  onChange={(e) => setFiltroDataPublicacao(e.target.value)}
+                  placeholder="Digite a data de publicação..."
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Data de Criação */}
+              <div>
+                <label htmlFor="filtroDataCriacao" className="block text-sm font-medium text-gray-700 mb-2">
+                  Data de Criação
+                </label>
+                <input
+                  type="text"
+                  id="filtroDataCriacao"
+                  value={filtroDataCriacao}
+                  onChange={(e) => setFiltroDataCriacao(e.target.value)}
+                  placeholder="Digite a data de criação..."
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Data de Atualização */}
+              <div>
+                <label htmlFor="filtroDataAtualizacao" className="block text-sm font-medium text-gray-700 mb-2">
+                  Data de Atualização
+                </label>
+                <input
+                  type="text"
+                  id="filtroDataAtualizacao"
+                  value={filtroDataAtualizacao}
+                  onChange={(e) => setFiltroDataAtualizacao(e.target.value)}
+                  placeholder="Digite a data de atualização..."
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Ativo */}
+              <div>
+                <label htmlFor="filtroAtivo" className="block text-sm font-medium text-gray-700 mb-2">
+                  Ativo
+                </label>
+                <select
+                  id="filtroAtivo"
+                  value={filtroAtivo}
+                  onChange={(e) => setFiltroAtivo(e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                >
+                  <option value="Todas">Todas</option>
+                  <option value="Sim">Sim</option>
+                  <option value="Nao">Não</option>
+                </select>
+              </div>
+
+              {/* Botões de ação */}
+              <div className="md:col-span-2 flex gap-2">
+                <button
+                  onClick={handleSearch}
+                  disabled={isLoading || !hasAnyFilterApplied()}
+                  className="flex-1 cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {isLoading ? 'Buscando...' : 'Buscar'}
+                </button>
+                <button
+                  onClick={handleClearSearch}
+                  disabled={isLoading || !hasAnyFilterApplied()}
+                  className="flex-1 px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  Limpar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -250,7 +436,10 @@ export const ListarParcerias = () => {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-end">
                   <button
-                    onClick={() => carregarParcerias(currentPage - 1, filtroCategoria || undefined)}
+                    onClick={() => {
+                      const current = getCurrentFilters();
+                      carregarParcerias(currentPage - 1, current as Partial<ParceriaListFilters>);
+                    }}
                     disabled={currentPage === 1 || isLoading}
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
@@ -260,7 +449,10 @@ export const ListarParcerias = () => {
                     Página <span className="font-medium">{currentPage}</span> de <span className="font-medium">{Math.ceil(totalItens / itemsPerPage)}</span>
                   </span>
                   <button
-                    onClick={() => carregarParcerias(currentPage + 1, filtroCategoria || undefined)}
+                    onClick={() => {
+                      const current = getCurrentFilters();
+                      carregarParcerias(currentPage + 1, current as Partial<ParceriaListFilters>);
+                    }}
                     disabled={currentPage === Math.ceil(totalItens / itemsPerPage) || isLoading}
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
@@ -275,5 +467,4 @@ export const ListarParcerias = () => {
     </PrivateLayout>
   );
 };
-
 

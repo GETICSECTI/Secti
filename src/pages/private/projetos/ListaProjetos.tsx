@@ -14,25 +14,25 @@ export const ListaProjetos = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage] = useState(10);
+  const [appliedFiltros, setAppliedFiltros] = useState<ProjetoFiltros | undefined>(undefined);
+  const [ordenarPor] = useState<string>('titulo');
+  const [ordenarDescendente] = useState<boolean>(false);
 
   // Carregar projetos da API
-  const loadProjetos = useCallback(async (page = 1, tituloFiltro = '', apenasAtivos?: boolean) => {
+  const loadProjetos = useCallback(async (page = 1, filtrosExtra?: Partial<ProjetoFiltros>) => {
     try {
       setLoading(true);
       setError(null);
 
+      // Use apenas os filtros passados explicitamente pelo chamador (getCurrentFilters)
+      // Se filtrosExtra estiver undefined, realiza listagem padrão (sem filtros adicionais)
       const filtros: ProjetoFiltros = {
-        pagina: page,
-        itensPorPagina: itemsPerPage,
-      };
-
-      if (tituloFiltro) {
-        filtros.titulo = tituloFiltro;
-      }
-
-      if (apenasAtivos !== undefined) {
-        filtros.apenasAtivos = apenasAtivos;
-      }
+        ordenarPor: filtrosExtra?.ordenarPor || ordenarPor,
+        ordenarDescendente: filtrosExtra?.ordenarDescendente !== undefined ? filtrosExtra!.ordenarDescendente! : ordenarDescendente,
+        pagina: filtrosExtra?.pagina ?? page,
+        itensPorPagina: filtrosExtra?.itensPorPagina ?? itemsPerPage,
+        ...(filtrosExtra || {}),
+      } as ProjetoFiltros;
 
       const response: ProjetoListResponse = await projetosService.listar(filtros);
 
@@ -51,13 +51,26 @@ export const ListaProjetos = () => {
       setProjetos(projetosFormatted);
       setTotalItems(response.totalItens);
       setCurrentPage(response.paginaAtual);
+      // marcar filtros aplicados (dirty) quando houver campos além de pagina/itensPorPagina
+      const hasFiltersObject = (f?: ProjetoFiltros | undefined) => {
+        if (!f) return false;
+        const keys = Object.keys(f).filter(k => k !== 'pagina' && k !== 'itensPorPagina' && k !== 'ordenarPor' && k !== 'ordenarDescendente');
+        return keys.some(k => {
+          const v = (f as Record<string, unknown>)[k];
+          if (v === undefined || v === null) return false;
+          if (typeof v === 'string') return String(v).trim() !== '';
+          return true;
+        });
+      };
+
+      setAppliedFiltros(hasFiltersObject(filtros) ? filtros : undefined);
     } catch (err) {
       const errorMessage = handleApiError(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [itemsPerPage]);
+  }, [itemsPerPage, ordenarPor, ordenarDescendente]);
 
   useEffect(() => {
     loadProjetos(1);
@@ -68,9 +81,7 @@ export const ListaProjetos = () => {
     try {
       await projetosService.inativar(id);
       // Recarregar lista após inativar
-      const apenasAtivos = filtroStatus === 'Ativo' ? true :
-                           filtroStatus === 'Inativo' ? false : undefined;
-      await loadProjetos(currentPage, busca, apenasAtivos);
+      await loadProjetos(currentPage, getCurrentFilters());
     } catch (err) {
       const errorMessage = handleApiError(err);
       setError(errorMessage);
@@ -82,27 +93,55 @@ export const ListaProjetos = () => {
     try {
       await projetosService.ativar(id);
       // Recarregar lista após ativar
-      const apenasAtivos = filtroStatus === 'Ativo' ? true :
-                           filtroStatus === 'Inativo' ? false : undefined;
-      await loadProjetos(currentPage, busca, apenasAtivos);
+      await loadProjetos(currentPage, getCurrentFilters());
     } catch (err) {
       const errorMessage = handleApiError(err);
       setError(errorMessage);
     }
   };
 
+  const hasFiltersObject = (f?: ProjetoFiltros | undefined) => {
+    if (!f) return false;
+    const keys = Object.keys(f).filter(k => k !== 'pagina' && k !== 'itensPorPagina' && k !== 'ordenarPor' && k !== 'ordenarDescendente');
+    return keys.some(k => {
+      const v = (f as Record<string, unknown>)[k];
+      if (v === undefined || v === null) return false;
+      if (typeof v === 'string') return String(v).trim() !== '';
+      return true;
+    });
+  };
+
+  const hasAnyFilterApplied = () => {
+    const uiHas = Boolean(busca.trim() || filtroStatus !== 'Todos');
+    const serverHas = hasFiltersObject(appliedFiltros);
+    return uiHas || serverHas;
+  };
+
+  const getCurrentFilters = () => {
+    if (hasAnyFilterApplied()) {
+      return {
+        titulo: busca.trim() || undefined,
+        apenasAtivos: filtroStatus === 'Ativo' ? true : filtroStatus === 'Inativo' ? false : undefined,
+        ordenarPor: ordenarPor,
+        ordenarDescendente: ordenarDescendente,
+        itensPorPagina: itemsPerPage,
+      } as Partial<ProjetoFiltros>;
+    }
+    if (appliedFiltros) return appliedFiltros;
+    return {} as Partial<ProjetoFiltros>;
+  };
+
   // Buscar projetos
   const handleSearch = () => {
-    const apenasAtivos = filtroStatus === 'Ativo' ? true :
-                         filtroStatus === 'Inativo' ? false : undefined;
-    loadProjetos(1, busca, apenasAtivos);
+    loadProjetos(1, getCurrentFilters());
   };
 
   // Limpar busca
   const handleClearSearch = () => {
     setBusca('');
     setFiltroStatus('Todos');
-    loadProjetos(1, '', undefined);
+    setAppliedFiltros(undefined);
+    loadProjetos(1, undefined);
   };
 
   return (
@@ -190,15 +229,15 @@ export const ListaProjetos = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSearch}
-                disabled={loading || (!busca.trim() && filtroStatus === 'Todos')}
-                className="cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                disabled={loading || !hasAnyFilterApplied()}
+                className="flex-1 cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {loading ? 'Buscando...' : 'Buscar'}
               </button>
               <button
                 onClick={handleClearSearch}
-                disabled={loading || (!busca.trim() && filtroStatus === 'Todos')}
-                className="px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                disabled={loading || !hasAnyFilterApplied()}
+                className="flex-1 px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 Limpar
               </button>
@@ -232,9 +271,7 @@ export const ListaProjetos = () => {
             <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-end">
               <button
                 onClick={() => {
-                  const apenasAtivos = filtroStatus === 'Ativo' ? true :
-                                       filtroStatus === 'Inativo' ? false : undefined;
-                  loadProjetos(currentPage - 1, busca, apenasAtivos);
+                  loadProjetos(currentPage - 1, getCurrentFilters());
                 }}
                 disabled={currentPage === 1 || loading}
                 className="px-3 py-1 cursor-pointer border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
@@ -246,9 +283,7 @@ export const ListaProjetos = () => {
               </span>
               <button
                 onClick={() => {
-                  const apenasAtivos = filtroStatus === 'Ativo' ? true :
-                                       filtroStatus === 'Inativo' ? false : undefined;
-                  loadProjetos(currentPage + 1, busca, apenasAtivos);
+                  loadProjetos(currentPage + 1, getCurrentFilters());
                 }}
                 disabled={currentPage === Math.ceil(totalItems / itemsPerPage) || loading}
                 className="px-3 py-1 cursor-pointer border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"

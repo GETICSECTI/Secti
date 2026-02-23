@@ -8,8 +8,18 @@ import { handleApiError } from '../../../utils/errorHandler';
 
 export const ListarRelatorios = () => {
   const [relatorios, setRelatorios] = useState<Relatorio[]>([]);
+  const [filtroId, setFiltroId] = useState<string>('');
   const [filtroTipo, setFiltroTipo] = useState<string>('Todos');
   const [filtroCategoria, setFiltroCategoria] = useState<string>('');
+  const [filtroCaminho, setFiltroCaminho] = useState<string>('');
+  const [filtroPastaId, setFiltroPastaId] = useState<string>('');
+  const [filtroAno, setFiltroAno] = useState<string>('');
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroDataCriacao, setFiltroDataCriacao] = useState<string>('');
+  const [filtroDataAtualizacao, setFiltroDataAtualizacao] = useState<string>('');
+  const [filtroAtivo, setFiltroAtivo] = useState<string>('Todas');
+  const [filtroUsuarioCriacaoId, setFiltroUsuarioCriacaoId] = useState<string>('');
+  const [filtroUsuarioAtualizacaoId, setFiltroUsuarioAtualizacaoId] = useState<string>('');
   const [busca, setBusca] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
@@ -19,6 +29,9 @@ export const ListarRelatorios = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [appliedFiltros, setAppliedFiltros] = useState<RelatorioListFilters | undefined>(undefined);
+  const [ordenarPor] = useState<string>('titulo');
+  const [ordenarDescendente] = useState<boolean>(false);
 
   const getTipoFromNome = (nomeArquivo?: string, caminhoArquivo?: string): Relatorio['tipo'] => {
     const origem = nomeArquivo || caminhoArquivo || '';
@@ -31,29 +44,78 @@ export const ListarRelatorios = () => {
     return 'outro';
   };
 
-  const carregarRelatorios = useCallback(async (
-    page = 1,
-    categoria?: string,
-    tituloFiltro = '',
-    tipoFiltro = 'Todos'
-  ) => {
+  // Verifica se um objeto de filtros contém algum filtro significativo
+  const hasFiltersObject = (filtros: RelatorioListFilters | undefined) => {
+    if (!filtros) return false;
+    const keys = Object.keys(filtros).filter(k => k !== 'pagina' && k !== 'itensPorPagina' && k !== 'ordenarPor' && k !== 'ordenarDescendente');
+    return keys.some(k => {
+      const v = (filtros as Record<string, unknown>)[k];
+      if (v === undefined || v === null) return false;
+      if (typeof v === 'string') return String(v).trim() !== '';
+      return true;
+    });
+  };
+
+  const hasAnyFilterApplied = () => {
+    const uiHas = Boolean(
+      busca.trim() ||
+      filtroCategoria ||
+      filtroTipo !== 'Todos' ||
+      filtroId ||
+      filtroCaminho ||
+      filtroPastaId ||
+      filtroAno ||
+      filtroDataPublicacao ||
+      filtroDataCriacao ||
+      filtroDataAtualizacao ||
+      (filtroAtivo !== 'Todas') ||
+      filtroUsuarioCriacaoId ||
+      filtroUsuarioAtualizacaoId
+    );
+    const serverHas = hasFiltersObject(appliedFiltros);
+    return uiHas || serverHas;
+  };
+
+  const getCurrentFilters = () => {
+    if (hasAnyFilterApplied()) {
+      return {
+        id: filtroId ? Number(filtroId) : undefined,
+        titulo: busca.trim() || undefined,
+        caminho: filtroCaminho || undefined,
+        categoria: filtroCategoria || undefined,
+        tipo: filtroTipo && filtroTipo !== 'Todos' ? filtroTipo : undefined,
+        pastaId: filtroPastaId ? Number(filtroPastaId) : undefined,
+        ano: filtroAno ? Number(filtroAno) : undefined,
+        dataPublicacao: filtroDataPublicacao || undefined,
+        dataCriacao: filtroDataCriacao || undefined,
+        dataAtualizacao: filtroDataAtualizacao || undefined,
+        ativo: filtroAtivo === 'Sim' ? true : filtroAtivo === 'Nao' ? false : undefined,
+        usuarioCriacaoId: filtroUsuarioCriacaoId ? Number(filtroUsuarioCriacaoId) : undefined,
+        usuarioAtualizacaoId: filtroUsuarioAtualizacaoId ? Number(filtroUsuarioAtualizacaoId) : undefined,
+        ordenarPor: ordenarPor,
+        ordenarDescendente: ordenarDescendente,
+        itensPorPagina: itemsPerPage,
+      } as Partial<RelatorioListFilters & { tipo?: string }>;
+    }
+    if (appliedFiltros) return appliedFiltros;
+    return {} as Partial<RelatorioListFilters>;
+  };
+
+  // Carregar relatórios com paginação (aceita filtros extras)
+  const carregarRelatorios = useCallback(async (page = 1, filtrosExtra?: Partial<RelatorioListFilters>) => {
     setIsLoading(true);
     setErro(null);
     try {
-      // Se há filtros locais (título ou tipo), busca todos para filtrar no cliente
-      const precisaFiltroLocal = tituloFiltro || tipoFiltro !== 'Todos';
-
+      // Use only filtrosExtra provided by caller; do not read UI state here to avoid
+      // triggering requests on every keystroke.
       const filtros: RelatorioListFilters = {
-        ordenarPor: 'titulo',
-        ordenarDescendente: false,
-        apenasAtivos: true,
-        pagina: precisaFiltroLocal ? 1 : page,
-        itensPorPagina: precisaFiltroLocal ? 10000 : itemsPerPage,
-      };
-
-      if (categoria) {
-        filtros.categoria = categoria;
-      }
+        ordenarPor: filtrosExtra?.ordenarPor || ordenarPor || 'dataPublicacao',
+        ordenarDescendente: filtrosExtra?.ordenarDescendente !== undefined ? filtrosExtra!.ordenarDescendente! : ordenarDescendente ?? true,
+        apenasAtivos: filtrosExtra?.apenasAtivos !== undefined ? filtrosExtra!.apenasAtivos! : true,
+        pagina: filtrosExtra?.pagina ?? page,
+        itensPorPagina: filtrosExtra?.itensPorPagina ?? itemsPerPage,
+        ...(filtrosExtra || {}),
+      } as RelatorioListFilters;
 
       const response = await relatoriosService.listar(filtros);
 
@@ -68,21 +130,20 @@ export const ListarRelatorios = () => {
         tags: relatorio.tags,
       }));
 
-      // Filtro por título no cliente (API não tem filtro por título)
+      // Apply client-side filters only if they were passed in filtrosExtra
+      const filtrosExtraTyped = filtrosExtra as Partial<RelatorioListFilters & { tipo?: string }> | undefined;
+      const tituloFiltro = filtrosExtraTyped?.titulo;
+      const tipoFiltro = filtrosExtraTyped?.tipo;
+
       if (tituloFiltro) {
-        relatoriosFormatados = relatoriosFormatados.filter(r =>
-          r.nome.toLowerCase().includes(tituloFiltro.toLowerCase())
-        );
+        relatoriosFormatados = relatoriosFormatados.filter(r => r.nome.toLowerCase().includes(tituloFiltro.toLowerCase()));
+      }
+      if (tipoFiltro) {
+        relatoriosFormatados = relatoriosFormatados.filter(r => r.tipo === tipoFiltro);
       }
 
-      // Filtro por tipo no cliente (API não tem filtro por tipo de arquivo)
-      if (tipoFiltro && tipoFiltro !== 'Todos') {
-        relatoriosFormatados = relatoriosFormatados.filter(r =>
-          r.tipo === tipoFiltro
-        );
-      }
-
-      // Paginação no cliente quando há filtros locais
+      // If client-side filtering was applied, paginate on client; otherwise use server totals
+      const precisaFiltroLocal = Boolean(tituloFiltro || tipoFiltro);
       if (precisaFiltroLocal) {
         setTotalItens(relatoriosFormatados.length);
         const start = (page - 1) * itemsPerPage;
@@ -94,13 +155,14 @@ export const ListarRelatorios = () => {
       }
 
       setCurrentPage(page);
+      setAppliedFiltros(hasFiltersObject(filtros) ? filtros : undefined);
     } catch (error) {
       const mensagemErro = handleApiError(error);
       setErro(mensagemErro);
     } finally {
       setIsLoading(false);
     }
-  }, [itemsPerPage]);
+  }, [itemsPerPage, ordenarPor, ordenarDescendente]);
 
   const carregarTags = useCallback(async () => {
     setIsLoadingTags(true);
@@ -131,7 +193,7 @@ export const ListarRelatorios = () => {
 
   // Buscar relatórios via endpoint
   const handleSearch = () => {
-    carregarRelatorios(1, filtroCategoria || undefined, busca, filtroTipo);
+    carregarRelatorios(1, getCurrentFilters());
   };
 
   // Limpar filtros
@@ -139,14 +201,25 @@ export const ListarRelatorios = () => {
     setBusca('');
     setFiltroTipo('Todos');
     setFiltroCategoria('');
-    carregarRelatorios(1, undefined, '', 'Todos');
+    setFiltroId('');
+    setFiltroCaminho('');
+    setFiltroPastaId('');
+    setFiltroAno('');
+    setFiltroDataPublicacao('');
+    setFiltroDataCriacao('');
+    setFiltroDataAtualizacao('');
+    setFiltroAtivo('Todas');
+    setFiltroUsuarioCriacaoId('');
+    setFiltroUsuarioAtualizacaoId('');
+    setAppliedFiltros(undefined);
+    carregarRelatorios(1, undefined);
   };
 
   const handleDelete = async (id: number) => {
     try {
       await relatoriosService.inativar(id);
       // Recarregar lista mantendo filtros
-      await carregarRelatorios(currentPage, filtroCategoria || undefined, busca, filtroTipo);
+      await carregarRelatorios(currentPage, getCurrentFilters());
     } catch (error) {
       const mensagemErro = handleApiError(error);
       setErro(mensagemErro);
@@ -261,22 +334,164 @@ export const ListarRelatorios = () => {
               </select>
             </div>
 
-            {/* Botões de ação */}
-            <div className="md:col-span-4 flex gap-2 flex-col sm:flex-row">
-              <button
-                onClick={handleSearch}
-                disabled={isLoading || (!busca.trim() && !filtroCategoria && filtroTipo === 'Todos')}
-                className="flex-1 cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {isLoading ? 'Buscando...' : 'Buscar'}
-              </button>
-              <button
-                onClick={handleClearSearch}
-                disabled={isLoading || (!busca.trim() && !filtroCategoria && filtroTipo === 'Todos')}
-                className="flex-1 sm:flex-auto px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                Limpar
-              </button>
+            {/* Campos adicionais e botões */}
+            <div className="md:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* ID */}
+              <div>
+                <label htmlFor="filtroId" className="block text-sm font-medium text-gray-700 mb-2">ID</label>
+                <input
+                  type="number"
+                  id="filtroId"
+                  value={filtroId}
+                  onChange={(e) => setFiltroId(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  placeholder="Ex: 123"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Caminho */}
+              <div>
+                <label htmlFor="filtroCaminho" className="block text-sm font-medium text-gray-700 mb-2">Caminho</label>
+                <input
+                  type="text"
+                  id="filtroCaminho"
+                  value={filtroCaminho}
+                  onChange={(e) => setFiltroCaminho(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  placeholder="Digite o caminho..."
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* PastaId */}
+              <div>
+                <label htmlFor="filtroPastaId" className="block text-sm font-medium text-gray-700 mb-2">Pasta (ID)</label>
+                <input
+                  type="number"
+                  id="filtroPastaId"
+                  value={filtroPastaId}
+                  onChange={(e) => setFiltroPastaId(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  placeholder="Ex: 5"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Ano */}
+              <div>
+                <label htmlFor="filtroAno" className="block text-sm font-medium text-gray-700 mb-2">Ano</label>
+                <input
+                  type="number"
+                  id="filtroAno"
+                  value={filtroAno}
+                  onChange={(e) => setFiltroAno(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  placeholder="Ex: 2024"
+                  min={1900}
+                  max={3000}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Data Publicacao */}
+              <div>
+                <label htmlFor="filtroDataPublicacao" className="block text-sm font-medium text-gray-700 mb-2">Data de Publicação</label>
+                <input
+                  type="datetime-local"
+                  id="filtroDataPublicacao"
+                  value={filtroDataPublicacao}
+                  onChange={(e) => setFiltroDataPublicacao(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Data Criacao */}
+              <div>
+                <label htmlFor="filtroDataCriacao" className="block text-sm font-medium text-gray-700 mb-2">Data de Criação</label>
+                <input
+                  type="datetime-local"
+                  id="filtroDataCriacao"
+                  value={filtroDataCriacao}
+                  onChange={(e) => setFiltroDataCriacao(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Data Atualizacao */}
+              <div>
+                <label htmlFor="filtroDataAtualizacao" className="block text-sm font-medium text-gray-700 mb-2">Data de Atualização</label>
+                <input
+                  type="datetime-local"
+                  id="filtroDataAtualizacao"
+                  value={filtroDataAtualizacao}
+                  onChange={(e) => setFiltroDataAtualizacao(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Ativo */}
+              <div>
+                <label htmlFor="filtroAtivo" className="block text-sm font-medium text-gray-700 mb-2">Ativo</label>
+                <select
+                  id="filtroAtivo"
+                  value={filtroAtivo}
+                  onChange={(e) => setFiltroAtivo(e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                >
+                  <option value="Todas">Todas</option>
+                  <option value="Sim">Sim</option>
+                  <option value="Nao">Não</option>
+                </select>
+              </div>
+
+              {/* Usuário Criação (ID) */}
+              <div>
+                <label htmlFor="filtroUsuarioCriacaoId" className="block text-sm font-medium text-gray-700 mb-2">Usuário Criação (ID)</label>
+                <input
+                  type="number"
+                  id="filtroUsuarioCriacaoId"
+                  value={filtroUsuarioCriacaoId}
+                  onChange={(e) => setFiltroUsuarioCriacaoId(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  placeholder="Ex: 10"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              {/* Usuário Atualização (ID) */}
+              <div>
+                <label htmlFor="filtroUsuarioAtualizacaoId" className="block text-sm font-medium text-gray-700 mb-2">Usuário Atualização (ID)</label>
+                <input
+                  type="number"
+                  id="filtroUsuarioAtualizacaoId"
+                  value={filtroUsuarioAtualizacaoId}
+                  onChange={(e) => setFiltroUsuarioAtualizacaoId(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                  placeholder="Ex: 12"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                />
+              </div>
+
+              <div className="md:col-span-2 flex gap-2">
+                <button
+                  onClick={handleSearch}
+                  disabled={isLoading || !hasAnyFilterApplied()}
+                  className="flex-1 cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {isLoading ? 'Buscando...' : 'Buscar'}
+                </button>
+                <button
+                  onClick={handleClearSearch}
+                  disabled={isLoading || !hasAnyFilterApplied()}
+                  className="flex-1 px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  Limpar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -286,13 +501,39 @@ export const ListarRelatorios = () => {
             <p className="text-sm text-gray-500">Carregando relatórios...</p>
           </div>
         ) : (
-          <ListarRelatoriosComponent
-            relatorios={relatorios}
-            onDelete={handleDelete}
-            emptyStateTitle="Nenhum relatório encontrado"
-            emptyStateDescription="Crie um novo relatório para começar"
-            showHeader={false}
-          />
+          <>
+            <ListarRelatoriosComponent
+              relatorios={relatorios}
+              onDelete={handleDelete}
+              emptyStateTitle="Nenhum relatório encontrado"
+              emptyStateDescription="Crie um novo relatório para começar"
+              showHeader={false}
+            />
+            {/* Paginação */}
+            {totalItens > itemsPerPage && (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="text-sm text-gray-700">
+                  Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, totalItens)} de {totalItens} relatórios
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => carregarRelatorios(currentPage - 1, getCurrentFilters())}
+                    disabled={currentPage === 1 || isLoading}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    onClick={() => carregarRelatorios(currentPage + 1, getCurrentFilters())}
+                    disabled={currentPage * itemsPerPage >= totalItens || isLoading}
+                    className="px-4 py-2 bg-[#0C2856] text-white rounded-md shadow-sm text-sm font-medium hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </PrivateLayout>

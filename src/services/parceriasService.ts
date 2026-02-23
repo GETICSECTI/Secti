@@ -106,6 +106,15 @@ export interface EditarParceriaRequest {
 export interface ParceriaListFilters {
   caminho?: string;
   categoria?: string;
+  id?: number;
+  titulo?: string;
+  ano?: number;
+  dataPublicacao?: string;
+  dataCriacao?: string;
+  dataAtualizacao?: string;
+  ativo?: boolean;
+  usuarioCriacaoId?: number;
+  usuarioAtualizacaoId?: number;
   apenasAtivas?: boolean;
   ordenarPor?: string;
   ordenarDescendente?: boolean;
@@ -272,11 +281,38 @@ export const parceriasService = {
   listar: async (filtros?: ParceriaListFilters): Promise<ParceriaListResponse> => {
     const params = new URLSearchParams();
 
+    if (filtros?.id !== undefined) {
+      params.append('Id', filtros.id.toString());
+    }
+    if (filtros?.titulo) {
+      params.append('Titulo', filtros.titulo);
+    }
     if (filtros?.caminho) {
       params.append('Caminho', filtros.caminho);
     }
     if (filtros?.categoria) {
       params.append('Categoria', filtros.categoria);
+    }
+    if (filtros?.ano !== undefined) {
+      params.append('Ano', filtros.ano.toString());
+    }
+    if (filtros?.dataPublicacao) {
+      params.append('DataPublicacao', filtros.dataPublicacao);
+    }
+    if (filtros?.dataCriacao) {
+      params.append('DataCriacao', filtros.dataCriacao);
+    }
+    if (filtros?.dataAtualizacao) {
+      params.append('DataAtualizacao', filtros.dataAtualizacao);
+    }
+    if (filtros?.ativo !== undefined) {
+      params.append('Ativo', filtros.ativo.toString());
+    }
+    if (filtros?.usuarioCriacaoId !== undefined) {
+      params.append('UsuarioCriacaoId', filtros.usuarioCriacaoId.toString());
+    }
+    if (filtros?.usuarioAtualizacaoId !== undefined) {
+      params.append('UsuarioAtualizacaoId', filtros.usuarioAtualizacaoId.toString());
     }
     if (filtros?.apenasAtivas !== undefined) {
       params.append('ApenasAtivas', filtros.apenasAtivas.toString());

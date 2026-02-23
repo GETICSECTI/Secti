@@ -8,8 +8,17 @@ import { handleApiError } from '../../../utils/errorHandler';
 
 export const ListarLegislacao = () => {
   const [legislacoes, setLegislacoes] = useState<Legislacao[]>([]);
+  const [filtroId, setFiltroId] = useState<string>('');
   const [filtroTipo, setFiltroTipo] = useState<string>('Todos');
   const [filtroCategoria, setFiltroCategoria] = useState<string>('');
+  const [filtroPastaId, setFiltroPastaId] = useState<string>('');
+  const [filtroAno, setFiltroAno] = useState<string>('');
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroDataCriacao, setFiltroDataCriacao] = useState<string>('');
+  const [filtroDataAtualizacao, setFiltroDataAtualizacao] = useState<string>('');
+  const [filtroAtivo, setFiltroAtivo] = useState<string>('Todas');
+  const [filtroUsuarioCriacaoId, setFiltroUsuarioCriacaoId] = useState<string>('');
+  const [filtroUsuarioAtualizacaoId, setFiltroUsuarioAtualizacaoId] = useState<string>('');
   const [busca, setBusca] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
@@ -19,6 +28,9 @@ export const ListarLegislacao = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [appliedFiltros, setAppliedFiltros] = useState<LegislacaoListFilters | undefined>(undefined);
+  const [ordenarPor] = useState<string>('titulo');
+  const [ordenarDescendente] = useState<boolean>(false);
 
   const getTipoFromNome = (nomeArquivo?: string, caminhoArquivo?: string): Legislacao['tipo'] => {
     const origem = nomeArquivo || caminhoArquivo || '';
@@ -31,29 +43,75 @@ export const ListarLegislacao = () => {
     return 'outro';
   };
 
-  const carregarLegislacoes = useCallback(async (
-    page = 1,
-    categoria?: string,
-    tituloFiltro = '',
-    tipoFiltro = 'Todos'
-  ) => {
+  // Verifica se um objeto de filtros contém algum filtro significativo
+  const hasFiltersObject = (filtros: LegislacaoListFilters | undefined) => {
+    if (!filtros) return false;
+    const keys = Object.keys(filtros).filter(k => k !== 'pagina' && k !== 'itensPorPagina' && k !== 'ordenarPor' && k !== 'ordenarDescendente');
+    return keys.some(k => {
+      const v = (filtros as Record<string, unknown>)[k];
+      if (v === undefined || v === null) return false;
+      if (typeof v === 'string') return String(v).trim() !== '';
+      return true;
+    });
+  };
+
+  const hasAnyFilterApplied = () => {
+    const uiHas = Boolean(
+      busca.trim() ||
+      filtroCategoria ||
+      filtroTipo !== 'Todos' ||
+      filtroId ||
+      filtroPastaId ||
+      filtroAno ||
+      filtroDataPublicacao ||
+      filtroDataCriacao ||
+      filtroDataAtualizacao ||
+      (filtroAtivo !== 'Todas') ||
+      filtroUsuarioCriacaoId ||
+      filtroUsuarioAtualizacaoId
+    );
+    const serverHas = hasFiltersObject(appliedFiltros);
+    return uiHas || serverHas;
+  };
+
+  const getCurrentFilters = () => {
+    if (hasAnyFilterApplied()) {
+      return {
+        id: filtroId ? Number(filtroId) : undefined,
+        titulo: busca.trim() || undefined,
+        categoria: filtroCategoria || undefined,
+        pastaId: filtroPastaId ? Number(filtroPastaId) : undefined,
+        ano: filtroAno ? Number(filtroAno) : undefined,
+        dataPublicacao: filtroDataPublicacao || undefined,
+        dataCriacao: filtroDataCriacao || undefined,
+        dataAtualizacao: filtroDataAtualizacao || undefined,
+        ativo: filtroAtivo === 'Sim' ? true : filtroAtivo === 'Nao' ? false : undefined,
+        usuarioCriacaoId: filtroUsuarioCriacaoId ? Number(filtroUsuarioCriacaoId) : undefined,
+        usuarioAtualizacaoId: filtroUsuarioAtualizacaoId ? Number(filtroUsuarioAtualizacaoId) : undefined,
+        ordenarPor: ordenarPor,
+        ordenarDescendente: ordenarDescendente,
+        itensPorPagina: itemsPerPage,
+      } as Partial<LegislacaoListFilters>;
+    }
+    if (appliedFiltros) return appliedFiltros;
+    return {} as Partial<LegislacaoListFilters>;
+  };
+
+  // Carregar legislações com paginação (aceita filtros extras)
+  const carregarLegislacoes = useCallback(async (page = 1, filtrosExtra?: Partial<LegislacaoListFilters>) => {
     setIsLoading(true);
     setErro(null);
     try {
-      // Se há filtros locais (título ou tipo), busca todos para filtrar no cliente
-      const precisaFiltroLocal = tituloFiltro || tipoFiltro !== 'Todos';
-
+      // Use only filtrosExtra provided by caller; do not read UI state here to avoid
+      // triggering requests on every keystroke.
       const filtros: LegislacaoListFilters = {
-        ordenarPor: 'titulo',
-        ordenarDescendente: false,
-        apenasAtivos: true,
-        pagina: precisaFiltroLocal ? 1 : page,
-        itensPorPagina: precisaFiltroLocal ? 10000 : itemsPerPage,
-      };
-
-      if (categoria) {
-        filtros.categoria = categoria;
-      }
+        ordenarPor: filtrosExtra?.ordenarPor || ordenarPor || 'titulo',
+        ordenarDescendente: filtrosExtra?.ordenarDescendente !== undefined ? filtrosExtra!.ordenarDescendente! : ordenarDescendente ?? false,
+        apenasAtivos: filtrosExtra?.apenasAtivos !== undefined ? filtrosExtra!.apenasAtivos! : true,
+        pagina: filtrosExtra?.pagina ?? page,
+        itensPorPagina: filtrosExtra?.itensPorPagina ?? itemsPerPage,
+        ...(filtrosExtra || {}),
+      } as LegislacaoListFilters;
 
       const response = await legislacaoService.listar(filtros);
 
@@ -68,21 +126,19 @@ export const ListarLegislacao = () => {
         tags: legislacao.tags,
       }));
 
-      // Filtro por título no cliente (API não tem filtro por título)
+      // Apply client-side filters only when passed explicitly in filtrosExtra
+      const filtrosExtraTyped = filtrosExtra as Partial<LegislacaoListFilters & { tipo?: string }> | undefined;
+      const tituloFiltro = filtrosExtraTyped?.titulo;
+      const tipoFiltro = filtrosExtraTyped?.tipo;
+
       if (tituloFiltro) {
-        legislacoesFormatadas = legislacoesFormatadas.filter(l =>
-          l.nome.toLowerCase().includes(tituloFiltro.toLowerCase())
-        );
+        legislacoesFormatadas = legislacoesFormatadas.filter(l => l.nome.toLowerCase().includes(tituloFiltro.toLowerCase()));
+      }
+      if (tipoFiltro) {
+        legislacoesFormatadas = legislacoesFormatadas.filter(l => l.tipo === tipoFiltro);
       }
 
-      // Filtro por tipo no cliente (API não tem filtro por tipo de arquivo)
-      if (tipoFiltro && tipoFiltro !== 'Todos') {
-        legislacoesFormatadas = legislacoesFormatadas.filter(l =>
-          l.tipo === tipoFiltro
-        );
-      }
-
-      // Paginação no cliente quando há filtros locais
+      const precisaFiltroLocal = Boolean(tituloFiltro || tipoFiltro);
       if (precisaFiltroLocal) {
         setTotalItens(legislacoesFormatadas.length);
         const start = (page - 1) * itemsPerPage;
@@ -94,13 +150,14 @@ export const ListarLegislacao = () => {
       }
 
       setCurrentPage(page);
+      setAppliedFiltros(hasFiltersObject(filtros) ? filtros : undefined);
     } catch (error) {
       const mensagemErro = handleApiError(error);
       setErro(mensagemErro);
     } finally {
       setIsLoading(false);
     }
-  }, [itemsPerPage]);
+  }, [itemsPerPage, ordenarPor, ordenarDescendente]);
 
   const carregarTags = useCallback(async () => {
     setIsLoadingTags(true);
@@ -131,7 +188,9 @@ export const ListarLegislacao = () => {
 
   // Buscar legislações via endpoint
   const handleSearch = () => {
-    carregarLegislacoes(1, filtroCategoria || undefined, busca, filtroTipo);
+    setCurrentPage(1);
+    const filtros = getCurrentFilters();
+    carregarLegislacoes(1, filtros);
   };
 
   // Limpar filtros
@@ -139,19 +198,31 @@ export const ListarLegislacao = () => {
     setBusca('');
     setFiltroTipo('Todos');
     setFiltroCategoria('');
-    carregarLegislacoes(1, undefined, '', 'Todos');
+    setFiltroId('');
+    setFiltroPastaId('');
+    setFiltroAno('');
+    setFiltroDataPublicacao('');
+    setFiltroDataCriacao('');
+    setFiltroDataAtualizacao('');
+    setFiltroAtivo('Todas');
+    setFiltroUsuarioCriacaoId('');
+    setFiltroUsuarioAtualizacaoId('');
+    setAppliedFiltros(undefined);
+    carregarLegislacoes(1, undefined);
   };
 
   const handleDelete = async (id: number) => {
     try {
       await legislacaoService.inativar(id);
-      // Recarregar lista mantendo filtros
-      await carregarLegislacoes(currentPage, filtroCategoria || undefined, busca, filtroTipo);
+      const current = getCurrentFilters();
+      await carregarLegislacoes(currentPage, current as Partial<LegislacaoListFilters>);
     } catch (error) {
       const mensagemErro = handleApiError(error);
       setErro(mensagemErro);
     }
   };
+
+  // JSX: adicionar inputs extras e ajustar botões e paginação
 
   return (
     <PrivateLayout>
@@ -194,9 +265,7 @@ export const ListarLegislacao = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Busca */}
             <div className="md:col-span-2">
-              <label htmlFor="busca" className="block text-sm font-medium text-gray-700 mb-2">
-                Buscar por Título
-              </label>
+              <label htmlFor="busca" className="block text-sm font-medium text-gray-700 mb-2">Buscar por Título</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -215,44 +284,23 @@ export const ListarLegislacao = () => {
               </div>
             </div>
 
-            {/* Filtro por Categoria */}
+            {/* Categoria */}
             <div>
-              <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-2">
-                Categoria
-              </label>
-              <select
-                id="categoria"
-                value={filtroCategoria}
-                onChange={(e) => setFiltroCategoria(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
-              >
+              <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
+              <select id="categoria" value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent">
                 <option value="">Todas as categorias</option>
                 {tags.map((tag) => (
-                  <option key={tag.id} value={tag.nome}>
-                    {tag.nome}
-                  </option>
+                  <option key={tag.id} value={tag.nome}>{tag.nome}</option>
                 ))}
               </select>
-              {isLoadingTags && (
-                <p className="mt-1 text-xs text-gray-500">Carregando categorias...</p>
-              )}
-              {erroTags && (
-                <p className="mt-1 text-xs text-red-600">{erroTags}</p>
-              )}
+              {isLoadingTags && <p className="mt-1 text-xs text-gray-500">Carregando categorias...</p>}
+              {erroTags && <p className="mt-1 text-xs text-red-600">{erroTags}</p>}
             </div>
 
-            {/* Filtro por Tipo */}
+            {/* Tipo */}
             <div>
-              <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Arquivo
-              </label>
-              <select
-                id="tipo"
-                value={filtroTipo}
-                onChange={(e) => setFiltroTipo(e.target.value)}
-                className="block w-full cursor-pointer px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
-              >
+              <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-2">Tipo de Arquivo</label>
+              <select id="tipo" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} className="block w-full cursor-pointer px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent">
                 <option value="Todos">Todos</option>
                 <option value="pdf">PDF</option>
                 <option value="xls">XLS</option>
@@ -261,22 +309,70 @@ export const ListarLegislacao = () => {
               </select>
             </div>
 
-            {/* Botões de ação */}
-            <div className="md:col-span-4 flex gap-2 flex-col sm:flex-row">
-              <button
-                onClick={handleSearch}
-                disabled={isLoading || (!busca.trim() && !filtroCategoria && filtroTipo === 'Todos')}
-                className="flex-1 cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {isLoading ? 'Buscando...' : 'Buscar'}
-              </button>
-              <button
-                onClick={handleClearSearch}
-                disabled={isLoading || (!busca.trim() && !filtroCategoria && filtroTipo === 'Todos')}
-                className="flex-1 sm:flex-auto px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                Limpar
-              </button>
+            {/* Filtros extras grid */}
+            <div className="md:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* ID */}
+              <div>
+                <label htmlFor="filtroId" className="block text-sm font-medium text-gray-700 mb-2">ID</label>
+                <input type="number" id="filtroId" value={filtroId} onChange={(e) => setFiltroId(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }} placeholder="Ex: 123" className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent" />
+              </div>
+
+              {/* PastaId */}
+              <div>
+                <label htmlFor="filtroPastaId" className="block text-sm font-medium text-gray-700 mb-2">Pasta (ID)</label>
+                <input type="number" id="filtroPastaId" value={filtroPastaId} onChange={(e) => setFiltroPastaId(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }} placeholder="Ex: 5" className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent" />
+              </div>
+
+              {/* Ano */}
+              <div>
+                <label htmlFor="filtroAno" className="block text-sm font-medium text-gray-700 mb-2">Ano</label>
+                <input type="number" id="filtroAno" value={filtroAno} onChange={(e) => setFiltroAno(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }} placeholder="Ex: 2024" min={1900} max={3000} className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent" />
+              </div>
+
+              {/* Data Publicacao */}
+              <div>
+                <label htmlFor="filtroDataPublicacao" className="block text-sm font-medium text-gray-700 mb-2">Data de Publicação</label>
+                <input type="datetime-local" id="filtroDataPublicacao" value={filtroDataPublicacao} onChange={(e) => setFiltroDataPublicacao(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }} className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent" />
+              </div>
+
+              {/* Data Criacao */}
+              <div>
+                <label htmlFor="filtroDataCriacao" className="block text-sm font-medium text-gray-700 mb-2">Data de Criação</label>
+                <input type="datetime-local" id="filtroDataCriacao" value={filtroDataCriacao} onChange={(e) => setFiltroDataCriacao(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }} className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent" />
+              </div>
+
+              {/* Data Atualizacao */}
+              <div>
+                <label htmlFor="filtroDataAtualizacao" className="block text-sm font-medium text-gray-700 mb-2">Data de Atualização</label>
+                <input type="datetime-local" id="filtroDataAtualizacao" value={filtroDataAtualizacao} onChange={(e) => setFiltroDataAtualizacao(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }} className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent" />
+              </div>
+
+              {/* Ativo */}
+              <div>
+                <label htmlFor="filtroAtivo" className="block text-sm font-medium text-gray-700 mb-2">Ativo</label>
+                <select id="filtroAtivo" value={filtroAtivo} onChange={(e) => setFiltroAtivo(e.target.value)} className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent">
+                  <option value="Todas">Todas</option>
+                  <option value="Sim">Sim</option>
+                  <option value="Nao">Não</option>
+                </select>
+              </div>
+
+              {/* Usuario Criacao */}
+              <div>
+                <label htmlFor="filtroUsuarioCriacaoId" className="block text-sm font-medium text-gray-700 mb-2">Usuário Criação (ID)</label>
+                <input type="number" id="filtroUsuarioCriacaoId" value={filtroUsuarioCriacaoId} onChange={(e) => setFiltroUsuarioCriacaoId(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }} placeholder="Ex: 10" className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent" />
+              </div>
+
+              {/* Usuario Atualizacao */}
+              <div>
+                <label htmlFor="filtroUsuarioAtualizacaoId" className="block text-sm font-medium text-gray-700 mb-2">Usuário Atualização (ID)</label>
+                <input type="number" id="filtroUsuarioAtualizacaoId" value={filtroUsuarioAtualizacaoId} onChange={(e) => setFiltroUsuarioAtualizacaoId(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }} placeholder="Ex: 12" className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent" />
+              </div>
+
+              <div className="md:col-span-2 flex gap-2">
+                <button onClick={handleSearch} disabled={isLoading || !hasAnyFilterApplied()} className="flex-1 cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium">{isLoading ? 'Buscando...' : 'Buscar'}</button>
+                <button onClick={handleClearSearch} disabled={isLoading || !hasAnyFilterApplied()} className="flex-1 px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium">Limpar</button>
+              </div>
             </div>
           </div>
         </div>
@@ -286,13 +382,21 @@ export const ListarLegislacao = () => {
             <p className="text-sm text-gray-500">Carregando legislações...</p>
           </div>
         ) : (
-          <ListarLegislacaoComponent
-            legislacoes={legislacoes}
-            onDelete={handleDelete}
-            emptyStateTitle="Nenhuma legislação encontrada"
-            emptyStateDescription="Crie uma nova legislação para começar"
-            showHeader={false}
-          />
+          <>
+            <ListarLegislacaoComponent legislacoes={legislacoes} onDelete={handleDelete} emptyStateTitle="Nenhuma legislação encontrada" emptyStateDescription="Crie uma nova legislação para começar" showHeader={false} />
+
+            {/* Paginação */}
+            {totalItens > itemsPerPage && (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white px-4 py-3 rounded-lg shadow-sm border border-gray-200">
+                <div className="text-sm text-gray-700">Mostrando <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItens)}</span> de <span className="font-medium">{totalItens}</span> resultados</div>
+                <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-end">
+                  <button onClick={() => { const current = getCurrentFilters(); carregarLegislacoes(currentPage - 1, current as Partial<LegislacaoListFilters>); }} disabled={currentPage === 1 || isLoading} className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium">Anterior</button>
+                  <span className="px-3 py-1 text-sm text-gray-700">Página <span className="font-medium">{currentPage}</span> de <span className="font-medium">{Math.ceil(totalItens / itemsPerPage)}</span></span>
+                  <button onClick={() => { const current = getCurrentFilters(); carregarLegislacoes(currentPage + 1, current as Partial<LegislacaoListFilters>); }} disabled={currentPage === Math.ceil(totalItens / itemsPerPage) || isLoading} className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium">Próxima</button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </PrivateLayout>

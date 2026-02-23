@@ -10,6 +10,12 @@ export const ListarDocumentosServidor = () => {
   const [documentos, setDocumentos] = useState<DocumentoServidor[]>([]);
   const [filtroAno, setFiltroAno] = useState<string>('');
   const [filtroCategoria, setFiltroCategoria] = useState<string>('');
+  const [filtroId, setFiltroId] = useState<string>('');
+  const [filtroPastaId, setFiltroPastaId] = useState<string>('');
+  const [filtroTagId, setFiltroTagId] = useState<string>('');
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroDataCriacao, setFiltroDataCriacao] = useState<string>('');
+  const [filtroDataAtualizacao, setFiltroDataAtualizacao] = useState<string>('');
   const [busca, setBusca] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
@@ -19,6 +25,9 @@ export const ListarDocumentosServidor = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [appliedFiltros, setAppliedFiltros] = useState<DocumentoServidorListFilters | undefined>(undefined);
+  const [ordenarPor] = useState<string>('dataPublicacao');
+  const [ordenarDescendente] = useState<boolean>(true);
 
   const getTipoFromNome = (nomeArquivo?: string, caminhoArquivo?: string): DocumentoServidor['tipo'] => {
     const origem = nomeArquivo || caminhoArquivo || '';
@@ -31,28 +40,68 @@ export const ListarDocumentosServidor = () => {
     return 'outro';
   };
 
-  // Carregar documentos com paginação servidor
-  const carregarDocumentos = useCallback(async (page = 1, anoFiltro?: number, categoriaFiltro?: string, tituloFiltro?: string) => {
+  // Verifica se um objeto de filtros contém algum filtro significativo
+  const hasFiltersObject = (filtros: DocumentoServidorListFilters | undefined) => {
+    if (!filtros) return false;
+    const keys = Object.keys(filtros).filter(k => k !== 'pagina' && k !== 'itensPorPagina' && k !== 'ordenarPor' && k !== 'ordenarDescendente');
+    return keys.some(k => {
+      const v = (filtros as Record<string, unknown>)[k];
+      if (v === undefined || v === null) return false;
+      if (typeof v === 'string') return String(v).trim() !== '';
+      return true;
+    });
+  };
+
+  const hasAnyFilterApplied = () => {
+    const uiHas = Boolean(
+      busca.trim() ||
+      filtroCategoria ||
+      filtroAno ||
+      filtroId ||
+      filtroPastaId ||
+      filtroTagId ||
+      filtroDataPublicacao ||
+      filtroDataCriacao ||
+      filtroDataAtualizacao
+    );
+    const serverHas = hasFiltersObject(appliedFiltros);
+    return uiHas || serverHas;
+  };
+
+  const getCurrentFilters = () => {
+    if (hasAnyFilterApplied()) {
+      return {
+        id: filtroId ? Number(filtroId) : undefined,
+        titulo: busca.trim() || undefined,
+        categoria: filtroCategoria || undefined,
+        ano: filtroAno ? Number(filtroAno) : undefined,
+        pastaId: filtroPastaId ? Number(filtroPastaId) : undefined,
+        tagId: filtroTagId ? Number(filtroTagId) : undefined,
+        dataPublicacao: filtroDataPublicacao || undefined,
+        dataCriacao: filtroDataCriacao || undefined,
+        dataAtualizacao: filtroDataAtualizacao || undefined,
+        ordenarPor: ordenarPor,
+        ordenarDescendente: ordenarDescendente,
+        itensPorPagina: itemsPerPage,
+      } as Partial<DocumentoServidorListFilters>;
+    }
+    if (appliedFiltros) return appliedFiltros;
+    return {} as Partial<DocumentoServidorListFilters>;
+  };
+
+  // Carregar documentos com paginação no servidor (aceita filtros extras)
+  const carregarDocumentos = useCallback(async (page = 1, filtrosExtra?: Partial<DocumentoServidorListFilters>) => {
     setIsLoading(true);
     setErro(null);
     try {
       const filtros: DocumentoServidorListFilters = {
-        ordenarPor: 'dataPublicacao',
-        ordenarDescendente: true,
-        apenasAtivos: true,
+        ordenarPor: filtrosExtra?.ordenarPor || ordenarPor || 'dataPublicacao',
+        ordenarDescendente: filtrosExtra?.ordenarDescendente !== undefined ? filtrosExtra!.ordenarDescendente! : ordenarDescendente ?? true,
+        apenasAtivos: filtrosExtra?.apenasAtivos !== undefined ? filtrosExtra!.apenasAtivos! : true,
         pagina: page,
-        itensPorPagina: itemsPerPage,
-      };
-
-      if (tituloFiltro) {
-        filtros.titulo = tituloFiltro;
-      }
-      if (anoFiltro) {
-        filtros.ano = anoFiltro;
-      }
-      if (categoriaFiltro && categoriaFiltro !== 'Todas') {
-        filtros.categoria = categoriaFiltro;
-      }
+        itensPorPagina: filtrosExtra?.itensPorPagina || itemsPerPage,
+        ...(filtrosExtra || {}),
+      } as DocumentoServidorListFilters;
 
       const response: DocumentoServidorListResponse = await documentosServidorService.listar(filtros);
 
@@ -70,13 +119,14 @@ export const ListarDocumentosServidor = () => {
       setDocumentos(documentosFormatados);
       setTotalItens(response.totalItens);
       setCurrentPage(page);
+      setAppliedFiltros(hasFiltersObject(filtros) ? filtros : undefined);
     } catch (error) {
       const mensagemErro = handleApiError(error);
       setErro(mensagemErro);
     } finally {
       setIsLoading(false);
     }
-  }, [itemsPerPage]);
+  }, [itemsPerPage, ordenarPor, ordenarDescendente]);
 
   const carregarTags = useCallback(async () => {
     setIsLoadingTags(true);
@@ -107,8 +157,7 @@ export const ListarDocumentosServidor = () => {
 
   // Buscar documentos via endpoint
   const handleSearch = () => {
-    const ano = filtroAno ? Number(filtroAno) : undefined;
-    carregarDocumentos(1, ano, filtroCategoria || undefined, busca || undefined);
+    carregarDocumentos(1, getCurrentFilters());
   };
 
   // Limpar filtros
@@ -116,15 +165,20 @@ export const ListarDocumentosServidor = () => {
     setBusca('');
     setFiltroAno('');
     setFiltroCategoria('');
-    carregarDocumentos(1, undefined, undefined, undefined);
+    setFiltroId('');
+    setFiltroPastaId('');
+    setFiltroTagId('');
+    setFiltroDataPublicacao('');
+    setFiltroDataCriacao('');
+    setFiltroDataAtualizacao('');
+    carregarDocumentos(1, undefined);
   };
 
   const handleDelete = async (id: number) => {
     try {
       await documentosServidorService.inativar(id);
       // Recarregar lista mantendo filtros
-      const ano = filtroAno ? Number(filtroAno) : undefined;
-      await carregarDocumentos(currentPage, ano, filtroCategoria || undefined, busca || undefined);
+      await carregarDocumentos(currentPage, getCurrentFilters());
     } catch (error) {
       const mensagemErro = handleApiError(error);
       setErro(mensagemErro);
@@ -172,9 +226,7 @@ export const ListarDocumentosServidor = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Busca */}
             <div>
-              <label htmlFor="busca" className="block text-sm font-medium text-gray-700 mb-2">
-                Buscar por Nome
-              </label>
+              <label htmlFor="busca" className="block text-sm font-medium text-gray-700 mb-2">Buscar por Nome</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -182,21 +234,64 @@ export const ListarDocumentosServidor = () => {
                   </svg>
                 </div>
                 <input
-                  type="text"
-                  id="busca"
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  placeholder="Digite o nome..."
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                    type="text"
+                    id="busca"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                    placeholder="Digite o nome..."
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
                 />
               </div>
             </div>
 
-            {/* Filtro por Categoria */}
+            {/* ID */}
             <div>
-              <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-2">
-                Categoria
-              </label>
+              <label htmlFor="id" className="block text-sm font-medium text-gray-700 mb-2">ID</label>
+              <input
+                type="number"
+                id="id"
+                value={filtroId}
+                onChange={(e) => setFiltroId(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                placeholder="Ex: 123"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+              />
+            </div>
+
+
+
+            {/* PastaId */}
+            <div>
+              <label htmlFor="pastaId" className="block text-sm font-medium text-gray-700 mb-2">Pasta (ID)</label>
+              <input
+                type="number"
+                id="pastaId"
+                value={filtroPastaId}
+                onChange={(e) => setFiltroPastaId(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                placeholder="Ex: 5"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+              />
+            </div>
+
+            {/* TagId */}
+            <div>
+              <label htmlFor="tagId" className="block text-sm font-medium text-gray-700 mb-2">Tag (ID)</label>
+              <input
+                type="number"
+                id="tagId"
+                value={filtroTagId}
+                onChange={(e) => setFiltroTagId(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                placeholder="Ex: 2"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+              />
+            </div>
+
+            {/* Categoria */}
+            <div>
+              <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
               <select
                 id="categoria"
                 value={filtroCategoria}
@@ -218,19 +313,41 @@ export const ListarDocumentosServidor = () => {
               )}
             </div>
 
-            {/* Filtro por Ano */}
+            {/* Data de Publicacao */}
             <div>
-              <label htmlFor="ano" className="block text-sm font-medium text-gray-700 mb-2">
-                Ano de Publicação
-              </label>
+              <label htmlFor="dataPublicacao" className="block text-sm font-medium text-gray-700 mb-2">Data de Publicação</label>
               <input
-                type="number"
-                id="ano"
-                value={filtroAno}
-                onChange={(e) => setFiltroAno(e.target.value)}
-                placeholder="Ex: 2024"
-                min={1900}
-                max={3000}
+                type="datetime-local"
+                id="dataPublicacao"
+                value={filtroDataPublicacao}
+                onChange={(e) => setFiltroDataPublicacao(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+              />
+            </div>
+
+            {/* Data Criacao */}
+            <div>
+              <label htmlFor="dataCriacao" className="block text-sm font-medium text-gray-700 mb-2">Data de Criação</label>
+              <input
+                type="datetime-local"
+                id="dataCriacao"
+                value={filtroDataCriacao}
+                onChange={(e) => setFiltroDataCriacao(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+              />
+            </div>
+
+            {/* Data Atualizacao */}
+            <div>
+              <label htmlFor="dataAtualizacao" className="block text-sm font-medium text-gray-700 mb-2">Data de Atualização</label>
+              <input
+                type="datetime-local"
+                id="dataAtualizacao"
+                value={filtroDataAtualizacao}
+                onChange={(e) => setFiltroDataAtualizacao(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
               />
             </div>
@@ -239,15 +356,15 @@ export const ListarDocumentosServidor = () => {
             <div className="md:col-span-3 flex gap-2">
               <button
                 onClick={handleSearch}
-                disabled={isLoading || (!busca.trim() && !filtroCategoria && !filtroAno)}
+                disabled={isLoading || !hasAnyFilterApplied()}
                 className="flex-1 cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {isLoading ? 'Buscando...' : 'Buscar'}
               </button>
               <button
                 onClick={handleClearSearch}
-                disabled={isLoading || (!busca.trim() && !filtroCategoria && !filtroAno)}
-                className="px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                disabled={isLoading || !hasAnyFilterApplied()}
+                className="flex-1 px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 Limpar
               </button>
@@ -278,8 +395,8 @@ export const ListarDocumentosServidor = () => {
                 <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-end">
                   <button
                     onClick={() => {
-                      const ano = filtroAno ? Number(filtroAno) : undefined;
-                      carregarDocumentos(currentPage - 1, ano, filtroCategoria || undefined);
+                      const current = getCurrentFilters();
+                      carregarDocumentos(currentPage - 1, current as Partial<DocumentoServidorListFilters>);
                     }}
                     disabled={currentPage === 1 || isLoading}
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
@@ -291,8 +408,8 @@ export const ListarDocumentosServidor = () => {
                   </span>
                   <button
                     onClick={() => {
-                      const ano = filtroAno ? Number(filtroAno) : undefined;
-                      carregarDocumentos(currentPage + 1, ano, filtroCategoria || undefined);
+                      const current = getCurrentFilters();
+                      carregarDocumentos(currentPage + 1, current as Partial<DocumentoServidorListFilters>);
                     }}
                     disabled={currentPage === Math.ceil(totalItens / itemsPerPage) || isLoading}
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"

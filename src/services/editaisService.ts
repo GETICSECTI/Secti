@@ -74,6 +74,16 @@ export interface EditalListResponse {
 export interface EditalListFilters {
   caminho?: string;
   categoria?: string;
+  id?: number;
+  titulo?: string;
+  ano?: number;
+  pastaId?: number;
+  dataPublicacao?: string;
+  dataCriacao?: string;
+  dataAtualizacao?: string;
+  ativo?: boolean;
+  usuarioCriacaoId?: number;
+  usuarioAtualizacaoId?: number;
   apenasAtivos?: boolean;
   ordenarPor?: string;
   ordenarDescendente?: boolean;
@@ -243,11 +253,41 @@ export const editaisService = {
   listar: async (filtros?: EditalListFilters): Promise<EditalListResponse> => {
     const params = new URLSearchParams();
 
+    if (filtros?.id !== undefined) {
+      params.append('Id', filtros.id.toString());
+    }
+    if (filtros?.titulo) {
+      params.append('Titulo', filtros.titulo);
+    }
     if (filtros?.caminho) {
       params.append('Caminho', filtros.caminho);
     }
     if (filtros?.categoria) {
       params.append('Categoria', filtros.categoria);
+    }
+    if (filtros?.ano !== undefined) {
+      params.append('Ano', filtros.ano.toString());
+    }
+    if (filtros?.pastaId !== undefined) {
+      params.append('PastaId', filtros.pastaId.toString());
+    }
+    if (filtros?.dataPublicacao) {
+      params.append('DataPublicacao', filtros.dataPublicacao);
+    }
+    if (filtros?.dataCriacao) {
+      params.append('DataCriacao', filtros.dataCriacao);
+    }
+    if (filtros?.dataAtualizacao) {
+      params.append('DataAtualizacao', filtros.dataAtualizacao);
+    }
+    if (filtros?.ativo !== undefined) {
+      params.append('Ativo', filtros.ativo.toString());
+    }
+    if (filtros?.usuarioCriacaoId !== undefined) {
+      params.append('UsuarioCriacaoId', filtros.usuarioCriacaoId.toString());
+    }
+    if (filtros?.usuarioAtualizacaoId !== undefined) {
+      params.append('UsuarioAtualizacaoId', filtros.usuarioAtualizacaoId.toString());
     }
     if (filtros?.apenasAtivos !== undefined) {
       params.append('ApenasAtivos', filtros.apenasAtivos.toString());

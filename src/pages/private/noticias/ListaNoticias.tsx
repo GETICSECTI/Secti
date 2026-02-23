@@ -20,6 +20,7 @@ export const ListaNoticias = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage] = useState(10);
+  const [appliedFiltros, setAppliedFiltros] = useState<NoticiaFiltros | undefined>(undefined);
 
   // Carregar notícias da API com paginação servidor
   const loadNoticias = useCallback(async (page = 1, filtrosExtra?: NoticiaFiltros) => {
@@ -48,6 +49,12 @@ export const ListaNoticias = () => {
       setNoticias(noticiasFormatted);
       setTotalItems(response.total);
       setCurrentPage(page);
+      // Update applied filters state: only consider filtrosExtra (client-provided filters)
+      if (filtrosExtra && hasFiltersObject(filtrosExtra)) {
+        setAppliedFiltros(filtrosExtra);
+      } else {
+        setAppliedFiltros(undefined);
+      }
     } catch (err) {
       const errorMessage = handleApiError(err);
       setError(errorMessage);
@@ -59,6 +66,16 @@ export const ListaNoticias = () => {
   useEffect(() => {
     loadNoticias();
   }, [loadNoticias]);
+
+  // Helper to determine if a filtros object contains any meaningful filter (excluding pagination keys)
+  const hasFiltersObject = (filtros: NoticiaFiltros | undefined) => {
+    if (!filtros) return false;
+    const keys = Object.keys(filtros).filter(k => k !== 'pagina' && k !== 'itensPorPagina');
+    return keys.some(k => {
+      const v = (filtros as Record<string, unknown>)[k];
+      return v !== undefined && v !== null && String(v).trim() !== '';
+    });
+  };
 
   // Função para excluir notícia (inativar)
   const buildFiltros = (): NoticiaFiltros => {
@@ -119,7 +136,26 @@ export const ListaNoticias = () => {
     setFiltroDataAtualizacao('');
     setFiltroUsuarioCriacaoId('');
     setFiltroUsuarioAtualizacaoId('');
+    // Clear applied filters state as well and reload list
+    setAppliedFiltros(undefined);
     loadNoticias(1);
+  };
+
+  // Helper to determine if any filter is applied (including ID)
+  const hasAnyFilterApplied = () => {
+    // Consider both the current input values and the last-applied filtros on the server.
+    const uiHas = Boolean(
+      busca.trim() ||
+      filtroStatus !== 'Todas' ||
+      filtroId ||
+      filtroDataPublicacao ||
+      filtroDataCriacao ||
+      filtroDataAtualizacao ||
+      filtroUsuarioCriacaoId ||
+      filtroUsuarioAtualizacaoId
+    );
+    const serverHas = hasFiltersObject(appliedFiltros);
+    return uiHas || serverHas;
   };
 
   return (
@@ -295,14 +331,14 @@ export const ListaNoticias = () => {
             <div className="md:col-span-4 flex gap-2 flex-col sm:flex-row">
               <button
                 onClick={handleSearch}
-                disabled={loading || (!busca.trim() && filtroStatus === 'Todas')}
+                disabled={loading || !hasAnyFilterApplied()}
                 className="flex-1 cursor-pointer bg-[#0C2856] text-white px-4 py-2 rounded-md hover:bg-[#195CE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {loading ? 'Buscando...' : 'Buscar'}
               </button>
               <button
                 onClick={handleClearSearch}
-                disabled={loading || (!busca.trim() && filtroStatus === 'Todas')}
+                disabled={loading || !hasAnyFilterApplied()}
                 className="flex-1 sm:flex-auto px-4 py-2 cursor-pointer border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 Limpar
