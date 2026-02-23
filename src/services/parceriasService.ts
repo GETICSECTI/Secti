@@ -74,6 +74,10 @@ export interface ParceriaPublicoItem {
   titulo: string;
   caminhoArquivo: string;
   dataPublicacao: string; // Data completa do backend
+  tags?: Array<{
+    id: number;
+    nome: string;
+  }>;
 }
 
 export interface ParceriaPublicoListResponse {
@@ -124,9 +128,9 @@ export interface ParceriaListFilters {
 
 export interface ParceriaPublicoFilters {
   titulo?: string;
+  ano?: number;
   dataPublicacao?: string;
-  caminho?: string;
-  categoria?: string;
+  tagIds?: number[];
   ordenarPor?: string;
   ordenarDescendente?: boolean;
   pagina?: number;
@@ -281,9 +285,6 @@ export const parceriasService = {
   listar: async (filtros?: ParceriaListFilters): Promise<ParceriaListResponse> => {
     const params = new URLSearchParams();
 
-    if (filtros?.id !== undefined) {
-      params.append('Id', filtros.id.toString());
-    }
     if (filtros?.titulo) {
       params.append('Titulo', filtros.titulo);
     }
@@ -353,12 +354,6 @@ export const parceriasService = {
     if (filtros?.dataPublicacao) {
       params.append('DataPublicacao', filtros.dataPublicacao);
     }
-    if (filtros?.caminho) {
-      params.append('Caminho', filtros.caminho);
-    }
-    if (filtros?.categoria) {
-      params.append('Categoria', filtros.categoria);
-    }
     if (filtros?.ordenarPor) {
       params.append('OrdenarPor', filtros.ordenarPor);
     }
@@ -375,8 +370,12 @@ export const parceriasService = {
     const queryString = params.toString();
     const url = `/Parceria/listar-publico${queryString ? `?${queryString}` : ''}`;
 
-    const response = await apiClient.get<ParceriaPublicoListResponse>(url);
-    return response.data;
+    try {
+      const response = await apiClient.get<ParceriaPublicoListResponse>(url);
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
   },
 
   /**

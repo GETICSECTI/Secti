@@ -1,3 +1,5 @@
+// Parcerias - Tela de listagem de parcerias públicas
+
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
 import { DocumentosParceriasPublicosList } from '../../../components/DocumentosParceriasPublicosList';
@@ -5,6 +7,7 @@ import type { DocumentoParceriaPublicoItem } from '../../../components/Documento
 import { useState, useEffect, useCallback } from 'react';
 import { useSEO } from '../../../utils/useSEO.ts';
 import { parceriasService } from '../../../services/parceriasService';
+import { tagService, type TagPublica } from '../../../services/tagService.ts';
 import { handleApiError } from '../../../utils/errorHandler';
 
 export const Parcerias = () => {
@@ -21,9 +24,33 @@ export const Parcerias = () => {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [filtroTitulo, setFiltroTitulo] = useState('');
-  const [filtroData, setFiltroData] = useState('');
+  const [filtroAno, setFiltroAno] = useState<number | undefined>();
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroTagId, setFiltroTagId] = useState<number | undefined>();
+  const [tags, setTags] = useState<TagPublica[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
 
-  const carregarParcerias = useCallback(async (pagina: number, titulo: string = '', dataPublicacao: string = '') => {
+  // Carregar tags no carregamento inicial
+  useEffect(() => {
+    const carregarTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await tagService.listarPublico({
+          pagina: 1,
+          itensPorPagina: 50,
+        });
+        const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
+        setTags(tagsOrdenadas);
+      } catch (err) {
+        console.error('Erro ao carregar tags:', err);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    carregarTags();
+  }, []);
+
+  const carregarParcerias = useCallback(async (pagina: number, titulo: string = '', ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -31,7 +58,9 @@ export const Parcerias = () => {
       // Buscar parcerias públicas do endpoint
       const response = await parceriasService.listarPublico({
         titulo: titulo || undefined,
+        ano: ano,
         dataPublicacao: dataPublicacao || undefined,
+        tagIds: tagIds,
         ordenarPor: 'anopublicacao',
         ordenarDescendente: true,
         pagina: pagina,
@@ -47,6 +76,7 @@ export const Parcerias = () => {
         categoria: 'Parcerias',
         url: doc.caminhoArquivo,
         dataPublicacao: doc.dataPublicacao,
+        tags: doc.tags,
       }));
 
       setDocumentos(documentosFormatados);
@@ -61,23 +91,27 @@ export const Parcerias = () => {
   }, []);
 
   useEffect(() => {
-    carregarParcerias(paginaAtual, filtroTitulo, filtroData);
-  }, [paginaAtual, filtroTitulo, filtroData, carregarParcerias]);
+    carregarParcerias(paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId ? [filtroTagId] : undefined);
+  }, [paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId, carregarParcerias]);
 
   const handleMudarPagina = (novaPagina: number) => {
     setPaginaAtual(novaPagina);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleBuscar = (titulo: string, dataPublicacao?: string) => {
+  const handleBuscar = (titulo: string, ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
     setFiltroTitulo(titulo);
-    setFiltroData(dataPublicacao || '');
+    setFiltroAno(ano);
+    setFiltroDataPublicacao(dataPublicacao || '');
+    setFiltroTagId(tagIds && tagIds.length > 0 ? tagIds[0] : undefined);
     setPaginaAtual(1);
   };
 
   const handleLimpar = () => {
     setFiltroTitulo('');
-    setFiltroData('');
+    setFiltroAno(undefined);
+    setFiltroDataPublicacao('');
+    setFiltroTagId(undefined);
     setPaginaAtual(1);
   };
 
@@ -110,7 +144,9 @@ export const Parcerias = () => {
       {/* Documents List */}
       <DocumentosParceriasPublicosList
         documents={documentos}
+        tags={tags}
         isLoading={isLoading}
+        isLoadingTags={isLoadingTags}
         totalPaginas={totalPaginas}
         paginaAtual={paginaAtual}
         onMudarPagina={handleMudarPagina}
