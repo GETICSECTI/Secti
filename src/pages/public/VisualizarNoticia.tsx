@@ -9,6 +9,7 @@ import { noticiasService, type NoticiaDetalhada } from '../../services/noticiasS
 import { handleApiError } from '../../utils/errorHandler';
 import { LoadingScreen } from '../../components/LoadingScreen';
 import { formatarDataBrasileira } from '../../utils/dateUtils';
+import sanitizeHtml from '../../utils/sanitizeHtml';
 
 export const VisualizarNoticia = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -210,7 +211,7 @@ export const VisualizarNoticia = () => {
                 prose-img:rounded-lg prose-img:shadow-xl prose-img:my-10 prose-img:w-full
                 prose-blockquote:border-l-4 prose-blockquote:border-[#195CE3] prose-blockquote:pl-6 prose-blockquote:py-3 prose-blockquote:my-8 prose-blockquote:italic prose-blockquote:text-gray-700 prose-blockquote:bg-blue-50/50 prose-blockquote:rounded-r
                 prose-hr:border-gray-300 prose-hr:my-10"
-              dangerouslySetInnerHTML={{ __html: noticia.conteudo }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(noticia.conteudo) }}
             />
 
             {/* Separador */}

@@ -4,6 +4,7 @@ import { PrivateLayout } from '../../../layouts/PrivateLayout';
 import { DeleteModal } from '../../../components/admin/DeleteModal';
 import { noticiasService, type NoticiaDetalhada } from '../../../services/noticiasService';
 import { handleApiError } from '../../../utils/errorHandler';
+import sanitizeHtml from '../../../utils/sanitizeHtml';
 
 interface NoticiaData {
   id: number;
@@ -263,7 +264,7 @@ export const VisualizarNoticiaAdmin = () => {
             <div
                 className="prose prose-sm sm:prose-base lg:prose-lg max-w-none
                  break-all"
-                dangerouslySetInnerHTML={{ __html: noticia.conteudo }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(noticia.conteudo) }}
             />
 
             {/* Informações adicionais */}

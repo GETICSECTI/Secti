@@ -10,6 +10,7 @@ import { projetosService } from '../../services/projetosService';
 import { handleApiError } from '../../utils/errorHandler';
 import { LoadingScreen } from '../../components/LoadingScreen';
 import { formatarDataBrasileira } from '../../utils/dateUtils';
+import DOMPurify from 'dompurify';
 
 export const Projetos = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -178,7 +179,7 @@ export const Projetos = () => {
                   {projetoDetalhe.descricao ? (
                     <div
                       className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: projetoDetalhe.descricao }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(projetoDetalhe.descricao) }}
                     />
                   ) : (
                     <p className="text-gray-600">Este projeto ainda não possui descrição.</p>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { tagService, type Tag } from '../../services/tagService';
 import { handleApiError } from '../../utils/errorHandler';
 import { LinkModal } from './LinkModal';
+import DOMPurify from 'dompurify';
 
 interface NoticiaFormData {
   titulo: string;
@@ -127,7 +128,7 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
           setFormData(prev => ({ ...prev, ...initialData, conteudo: htmlToPlain(conteudoInicial) }));
           // set editor HTML on next tick
           requestAnimationFrame(() => {
-            if (editorRef.current) editorRef.current.innerHTML = conteudoInicial;
+            if (editorRef.current) editorRef.current.innerHTML = DOMPurify.sanitize(conteudoInicial);
           });
         } else {
           setFormData(prev => ({ ...prev, ...initialData, conteudo: conteudoInicial }));
@@ -387,9 +388,9 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
     let conteudoParaEnviar: string;
     if (tipoConteudo === 'simples') {
       // pegar o HTML gerado pelo editor (contentEditable)
-      conteudoParaEnviar = editorRef.current ? editorRef.current.innerHTML : (formData.conteudo || '');
+      conteudoParaEnviar = editorRef.current ? DOMPurify.sanitize(editorRef.current.innerHTML) : (formData.conteudo || '');
     } else {
-      conteudoParaEnviar = formData.conteudo || '';
+      conteudoParaEnviar = DOMPurify.sanitize(formData.conteudo || '');
     }
 
     console.log('[NoticiaForm] Chamando onSubmit com dados:', {

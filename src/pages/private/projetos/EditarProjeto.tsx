@@ -6,6 +6,7 @@ import { ImageUpload } from '../../../components/admin/ImageUpload';
 import { projetosService, validarProjeto } from '../../../services/projetosService';
 import { handleApiError } from '../../../utils/errorHandler';
 import { LinkModal } from '../../../components/admin/LinkModal';
+import sanitizeHtml from '../../../utils/sanitizeHtml';
 
 export const EditarProjeto = () => {
   const navigate = useNavigate();
@@ -77,7 +78,7 @@ export const EditarProjeto = () => {
 
         // se estamos no modo simples, preencher editor com HTML existente
         requestAnimationFrame(() => {
-          if (editorRef.current) editorRef.current.innerHTML = projeto.descricao || '';
+          if (editorRef.current) editorRef.current.innerHTML = sanitizeHtml(projeto.descricao || '');
         });
       } catch (err) {
         const errorMessage = handleApiError(err);
@@ -93,7 +94,7 @@ export const EditarProjeto = () => {
   useEffect(() => {
     if (tipoConteudo === 'simples') {
       requestAnimationFrame(() => {
-        if (editorRef.current) editorRef.current.innerHTML = formData.descricao || '';
+        if (editorRef.current) editorRef.current.innerHTML = sanitizeHtml(formData.descricao || '');
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -278,7 +279,8 @@ export const EditarProjeto = () => {
       }));
 
       // obter descricao correta
-      const descricaoParaEnviar = tipoConteudo === 'simples' ? (editorRef.current ? editorRef.current.innerHTML : formData.descricao) : formData.descricao;
+      const descricaoRaw = tipoConteudo === 'simples' ? (editorRef.current ? editorRef.current.innerHTML : formData.descricao) : formData.descricao;
+      const descricaoParaEnviar = sanitizeHtml(descricaoRaw);
 
       // Validar dados
       const errosValidacao = validarProjeto({
