@@ -28,10 +28,7 @@ export const Projetos = () => {
 
   const projetoDetalhe = slug ? projetos[0] : null;
 
-  const descricaoParagrafos = (projetoDetalhe?.descricao || '')
-    .split('\n')
-    .map((texto) => texto.trim())
-    .filter(Boolean);
+  // mostra a descrição como HTML (quando disponível) para respeitar a formatação salva
 
   useEffect(() => {
     const carregarProjetos = async () => {
@@ -178,12 +175,11 @@ export const Projetos = () => {
                     </div>
                   )}
 
-                  {descricaoParagrafos.length > 0 ? (
-                    <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-                      {descricaoParagrafos.map((texto, index) => (
-                        <p key={`${index}-${texto.slice(0, 12)}`}>{texto}</p>
-                      ))}
-                    </div>
+                  {projetoDetalhe.descricao ? (
+                    <div
+                      className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: projetoDetalhe.descricao }}
+                    />
                   ) : (
                     <p className="text-gray-600">Este projeto ainda não possui descrição.</p>
                   )}

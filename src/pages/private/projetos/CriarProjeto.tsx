@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PrivateLayout } from '../../../layouts/PrivateLayout';
 import { PerguntasFrequentesForm, type PerguntaFrequente } from '../../../components/admin/PerguntasFrequentesForm';
 import { ImageUpload } from '../../../components/admin/ImageUpload';
 import { projetosService, validarProjeto } from '../../../services/projetosService';
 import { handleApiError } from '../../../utils/errorHandler';
+import { LinkModal } from '../../../components/admin/LinkModal';
 
 export const CriarProjeto = () => {
   const navigate = useNavigate();
@@ -22,6 +23,145 @@ export const CriarProjeto = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [fotoCapaPreview, setFotoCapaPreview] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  // Editor states for descrição (match NoticiaForm behavior)
+  const [tipoConteudo, setTipoConteudo] = useState<'simples' | 'rico'>('simples');
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const savedMarkersRef = useRef<{ startId: string; endId: string } | null>(null);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [linkInitialUrl, setLinkInitialUrl] = useState<string>('');
+  const [linkInitialText, setLinkInitialText] = useState<string>('');
+
+  useEffect(() => {
+    // when switching to simples, set editor HTML from formData.descricao
+    if (tipoConteudo === 'simples') {
+      requestAnimationFrame(() => {
+        if (editorRef.current) editorRef.current.innerHTML = formData.descricao || '';
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipoConteudo]);
+
+  const applyFormat = (command: string, value?: string) => {
+    try {
+      document.execCommand(command, false, value);
+      if (editorRef.current) setFormData(prev => ({ ...prev, descricao: editorRef.current!.innerHTML }));
+    } catch (err) {
+      console.warn('format error', err);
+    }
+  };
+
+  const handleInsertLink = () => {
+    const sel = window.getSelection();
+    let selText = '';
+    savedMarkersRef.current = null;
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer) && !range.collapsed) {
+        const uid = `m${Date.now()}${Math.floor(Math.random() * 10000)}`;
+        const startId = `sel-start-${uid}`;
+        const endId = `sel-end-${uid}`;
+        const startMarker = document.createElement('span');
+        const endMarker = document.createElement('span');
+        startMarker.id = startId;
+        endMarker.id = endId;
+        startMarker.style.display = 'none';
+        endMarker.style.display = 'none';
+
+        const endRange = range.cloneRange();
+        endRange.collapse(false);
+        endRange.insertNode(endMarker);
+        const startRange = range.cloneRange();
+        startRange.collapse(true);
+        startRange.insertNode(startMarker);
+
+        savedMarkersRef.current = { startId, endId };
+        selText = sel.toString();
+      }
+    }
+    setLinkInitialText(selText);
+    setLinkInitialUrl('https://');
+    setIsLinkModalOpen(true);
+  };
+
+  const handleLinkConfirm = (url: string, text: string) => {
+    if (!editorRef.current) { setIsLinkModalOpen(false); return; }
+
+    let finalUrl = url.trim();
+    if (finalUrl && !/^https?:\/\//i.test(finalUrl)) finalUrl = 'https://' + finalUrl;
+
+    editorRef.current.focus();
+
+    const escapeHtml = (str: string) => {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
+
+    if (savedMarkersRef.current && editorRef.current) {
+      const { startId, endId } = savedMarkersRef.current;
+      const startMarker = document.getElementById(startId);
+      const endMarker = document.getElementById(endId);
+      try {
+        if (startMarker && endMarker && editorRef.current.contains(startMarker) && editorRef.current.contains(endMarker)) {
+          const range = document.createRange();
+          range.setStartAfter(startMarker);
+          range.setEndBefore(endMarker);
+          const contents = range.extractContents();
+          const a = document.createElement('a');
+          a.classList.add('LinkNoticia');
+          a.setAttribute('href', finalUrl);
+          a.setAttribute('target', '_blank');
+          a.setAttribute('rel', 'noopener noreferrer');
+          a.appendChild(contents);
+          range.insertNode(a);
+          startMarker.remove();
+          endMarker.remove();
+          const after = document.createRange();
+          after.setStartAfter(a);
+          after.collapse(true);
+          const sel2 = window.getSelection();
+          if (sel2) { sel2.removeAllRanges(); sel2.addRange(after); }
+          if (editorRef.current) setFormData(prev => ({ ...prev, descricao: editorRef.current!.innerHTML }));
+        } else {
+          if (text && text.trim().length > 0) {
+            applyFormat('insertHTML', `<a class="LinkNoticia" href="${escapeHtml(finalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`);
+          } else {
+            applyFormat('insertHTML', `<a class="LinkNoticia" href="${escapeHtml(finalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(finalUrl)}</a>`);
+          }
+        }
+      } catch (error) {
+        console.warn('insert link markers fallback', error);
+        applyFormat('createLink', finalUrl);
+        // ensure class on created link
+        setTimeout(() => {
+          if (editorRef.current) {
+            const a = editorRef.current.querySelector(`a[href^="${finalUrl}"]`);
+            if (a) a.classList.add('LinkNoticia');
+            setFormData(prev => ({ ...prev, descricao: editorRef.current!.innerHTML }));
+          }
+        }, 0);
+      }
+      savedMarkersRef.current = null;
+    } else {
+      if (text && text.trim().length > 0) {
+        applyFormat('insertHTML', `<a class="LinkNoticia" href="${escapeHtml(finalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`);
+      } else {
+        applyFormat('insertHTML', `<a class="LinkNoticia" href="${escapeHtml(finalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(finalUrl)}</a>`);
+      }
+    }
+
+    setIsLinkModalOpen(false);
+  };
+
+  const clearSavedMarkers = () => {
+    if (savedMarkersRef.current && editorRef.current) {
+      const { startId, endId } = savedMarkersRef.current;
+      const s = document.getElementById(startId);
+      const e = document.getElementById(endId);
+      if (s) s.remove();
+      if (e) e.remove();
+    }
+    savedMarkersRef.current = null;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -72,17 +212,13 @@ export const CriarProjeto = () => {
         ordem: index,
       }));
 
-      console.log('[CriarProjeto] Estado dos arquivos:', {
-        fotoCapaFile: fotoCapaFile ? `${fotoCapaFile.name} (${fotoCapaFile.size} bytes)` : 'null',
-        logoFile: logoFile ? `${logoFile.name} (${logoFile.size} bytes)` : 'null',
-        fotoCapaUrl,
-        logoUrl,
-      });
+      // obter descrição correta (HTML) dependendo do modo
+      const descricaoParaEnviar = tipoConteudo === 'simples' ? (editorRef.current ? editorRef.current.innerHTML : formData.descricao) : formData.descricao;
 
       // Validar dados
       const errosValidacao = validarProjeto({
         titulo: formData.titulo,
-        descricao: formData.descricao,
+        descricao: descricaoParaEnviar,
         url: formData.url,
         perguntasFrequentes: perguntasPayload,
         fotoCapa: fotoCapaFile || undefined,
@@ -95,16 +231,10 @@ export const CriarProjeto = () => {
         return;
       }
 
-      console.log('[CriarProjeto] Enviando para o service:', {
-        titulo: formData.titulo,
-        fotoCapa: fotoCapaFile || undefined,
-        logo: logoFile || undefined,
-      });
-
       // Enviar dados
       await projetosService.cadastrar({
         titulo: formData.titulo,
-        descricao: formData.descricao,
+        descricao: descricaoParaEnviar,
         url: formData.url,
         perguntasFrequentes: perguntasPayload,
         fotoCapa: fotoCapaFile || undefined,
@@ -164,20 +294,73 @@ export const CriarProjeto = () => {
             />
           </div>
 
-          {/* Descrição */}
+          {/* Descrição - substituído por editor rico/simples */}
           <div>
             <label htmlFor="descricao" className="block text-sm font-medium text-gray-700 mb-2">
               Descrição
             </label>
-            <textarea
-              id="descricao"
-              name="descricao"
-              value={formData.descricao}
-              onChange={handleInputChange}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
-              placeholder="Digite a descrição do projeto"
-            />
+
+            <div className="flex items-center justify-between mb-2">
+              <div />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTipoConteudo('simples')}
+                  className={`px-3 cursor-pointer py-1 text-sm rounded-md transition-colors ${
+                    tipoConteudo === 'simples' ? 'bg-[#0C2856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Conteúdo Simples
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoConteudo('rico')}
+                  className={`px-3 cursor-pointer py-1 text-sm rounded-md transition-colors ${
+                    tipoConteudo === 'rico' ? 'bg-[#0C2856] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Conteúdo Rico (HTML)
+                </button>
+              </div>
+            </div>
+
+            {tipoConteudo === 'simples' && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                <button type="button" onClick={() => applyFormat('formatBlock', 'h3')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Título</button>
+                <button type="button" onClick={() => applyFormat('formatBlock', 'p')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Parágrafo</button>
+                <button type="button" onClick={() => applyFormat('bold')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Negrito</button>
+                <button type="button" onClick={() => applyFormat('italic')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Itálico</button>
+                <button type="button" onClick={() => applyFormat('insertUnorderedList')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Lista</button>
+                <button type="button" onClick={handleInsertLink} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Link</button>
+                <button type="button" onClick={() => applyFormat('insertHTML', '<br/>')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Quebra (&lt;br/&gt;)</button>
+              </div>
+            )}
+
+            {tipoConteudo === 'simples' ? (
+              <div
+                ref={editorRef}
+                contentEditable
+                role="textbox"
+                aria-multiline
+                suppressContentEditableWarning
+                onInput={() => {
+                  if (editorRef.current) setFormData(prev => ({ ...prev, descricao: editorRef.current!.innerHTML }));
+                }}
+                className="editor-content min-h-40 block w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent bg-white"
+              />
+            ) : (
+              <textarea
+                id="descricao"
+                name="descricao"
+                rows={6}
+                value={formData.descricao}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
+                placeholder="Digite a descrição do projeto"
+              />
+            )}
+
+            <p className="mt-1 text-sm text-gray-500">Use o modo simples para formatar rapidamente ou o modo HTML para editar diretamente.</p>
           </div>
 
           {/* URL */}
@@ -279,6 +462,13 @@ export const CriarProjeto = () => {
           </div>
         </form>
       </div>
+      <LinkModal
+        isOpen={isLinkModalOpen}
+        initialUrl={linkInitialUrl}
+        initialText={linkInitialText}
+        onConfirm={handleLinkConfirm}
+        onClose={() => { clearSavedMarkers(); setIsLinkModalOpen(false); }}
+      />
     </PrivateLayout>
   );
 };
