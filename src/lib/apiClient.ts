@@ -1,6 +1,13 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
 
+// Callback para redirecionar para login quando token expirar
+let onUnauthorized: (() => void) | null = null;
+
+export const setUnauthorizedCallback = (callback: () => void) => {
+  onUnauthorized = callback;
+};
+
 // Create axios instance with default config
 export const apiClient = axios.create({
   baseURL: API_CONFIG.baseURL,
@@ -43,10 +50,15 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
-    // Handle 401 Unauthorized errors
+    // Tratamento de erros 401 - Token expirado
     if (error.response?.status === 401) {
-      // Clear auth data from localStorage
+      // Limpar dados de autenticação do localStorage
       localStorage.removeItem('auth_data');
+
+      // Chamar callback para redirecionar para login se registrado
+      if (onUnauthorized) {
+        onUnauthorized();
+      }
     }
 
     return Promise.reject(error);

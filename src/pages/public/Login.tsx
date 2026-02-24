@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from "../../contexts";
 import CTINegativaColorida from "../../assets/MarcaCTINegativaEColorida.png"
 import SECTIPredio from "../../assets/SECTIPredio.jpg"
@@ -10,8 +10,19 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Verificar se há mensagem de sessão expirada na URL
+  useEffect(() => {
+    const sessionError = searchParams.get('sessionExpired');
+    if (sessionError === 'true') {
+      setError('Sua sessão expirou. Por favor, faça login novamente.');
+      // Limpar o parâmetro da URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
