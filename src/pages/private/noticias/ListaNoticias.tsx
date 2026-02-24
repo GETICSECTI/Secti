@@ -9,7 +9,7 @@ export const ListaNoticias = () => {
   const [noticias, setNoticias] = useState<NoticiaAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filtroStatus, setFiltroStatus] = useState<string>('Todas');
+  const [filtroStatus, setFiltroStatus] = useState<string>('Publicada');
   const [filtroId, setFiltroId] = useState<string>('');
   const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
   const [filtroDataCriacao, setFiltroDataCriacao] = useState<string>('');
@@ -64,7 +64,8 @@ export const ListaNoticias = () => {
   }, [itemsPerPage]);
 
   useEffect(() => {
-    loadNoticias();
+    // Carrega a primeira página mostrando apenas notícias publicadas por padrão
+    loadNoticias(1, { apenasPublicadas: true });
   }, [loadNoticias]);
 
   // Helper to determine if a filtros object contains any meaningful filter (excluding pagination keys)

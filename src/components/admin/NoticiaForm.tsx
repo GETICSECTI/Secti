@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tagService, type Tag } from '../../services/tagService';
 import { handleApiError } from '../../utils/errorHandler';
+import { LinkModal } from './LinkModal';
 
 interface NoticiaFormData {
   titulo: string;
@@ -41,7 +42,53 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
     tagId: null,
   });
 
+  // referência para o textarea do conteúdo (usado no modo 'simples' para inserir tags e br)
+  const conteudoRef = useRef<HTMLTextAreaElement | null>(null);
+  // editorRef para contentEditable (modo simples)
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  // salva a seleção (Range) antes de abrir o modal para restaurar depois
+  const savedSelectionRef = useRef<Range | null>(null);
+  // markers ref to store inserted marker ids
+  const savedMarkersRef = useRef<{ startId: string; endId: string } | null>(null);
+  // guarda o HTML original (se existir) para poder restaurar quando alternar para modo rico
+  const originalHtmlRef = useRef<string | null>(null);
+
+  // utilitários de conversão
+  const htmlToPlain = (html?: string | null) => {
+    if (!html) return '';
+    let s = String(html);
+    // transformar <br> em quebra de linha
+    s = s.replace(/<br\s*\/?>(\s*)/gi, '\n');
+    // transformar finais de blocos em quebra de linha
+    s = s.replace(/<\/(p|div|h[1-6]|li|ul|ol)>/gi, '\n');
+    // remover todas as tags restantes
+    s = s.replace(/<[^>]+>/g, '');
+    // decodificar entidades HTML
+    if (typeof document !== 'undefined') {
+      const txt = document.createElement('textarea');
+      txt.innerHTML = s;
+      s = txt.value;
+    }
+    // Normalizar múltiplas quebras em no máximo duas
+    s = s.replace(/\n\s*\n+/g, '\n\n');
+    return s;
+  };
+
+  const plainToHtml = (plain?: string | null) => {
+    if (!plain) return '';
+    // normalizar quebras e converter em <br/>
+    const p = String(plain).replace(/\r\n/g, '\n');
+    // duplas quebras podem indicar parágrafos — transformar em </p><p>
+    const withParagraphs = p.replace(/\n\n+/g, '</p><p>');
+    // envolver em <p> se houver paragrafos e retornar
+    return '<p>' + withParagraphs.replace(/\n/g, '<br/>') + '</p>';
+  };
+
   const [tags, setTags] = useState<Tag[]>([]);
+  // Link modal state
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [linkInitialUrl, setLinkInitialUrl] = useState<string>('');
+  const [linkInitialText, setLinkInitialText] = useState<string>('');
   const [isLoadingTags, setIsLoadingTags] = useState(true);
   const [erroCarregandoTags, setErroCarregandoTags] = useState<string | null>(null);
 
@@ -70,9 +117,44 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
 
   useEffect(() => {
     if (initialData) {
-      setFormData(prev => ({ ...prev, ...initialData })); // eslint-disable-line react-hooks/set-state-in-effect
+      // se o conteúdo inicial tiver tags HTML, armazena o HTML original e, se estivermos em modo simples,
+      // converte para texto limpo (sem tags) antes de preencher o textarea
+      const conteudoInicial = (initialData as Partial<NoticiaFormData>).conteudo as string | undefined;
+      if (conteudoInicial && /<[^>]+>/g.test(conteudoInicial)) {
+        originalHtmlRef.current = conteudoInicial;
+        // preenche state.conteudo apenas se for modo rico; se for simples vamos setar o editor innerHTML
+        if (tipoConteudo === 'simples') {
+          setFormData(prev => ({ ...prev, ...initialData, conteudo: htmlToPlain(conteudoInicial) }));
+          // set editor HTML on next tick
+          requestAnimationFrame(() => {
+            if (editorRef.current) editorRef.current.innerHTML = conteudoInicial;
+          });
+        } else {
+          setFormData(prev => ({ ...prev, ...initialData, conteudo: conteudoInicial }));
+        }
+      } else {
+        setFormData(prev => ({ ...prev, ...initialData }));
+      }
     }
-  }, [initialData]);
+  }, [initialData, tipoConteudo]);
+
+  // Quando o editor muda para o modo 'simples' ou 'rico', faz conversões apropriadas
+  useEffect(() => {
+    if (tipoConteudo === 'simples') {
+      // colocar o HTML atual no editor (se tivermos originalHtmlRef use-o, senão converte o formData.conteudo)
+      const toSet = originalHtmlRef.current ?? plainToHtml(formData.conteudo);
+      requestAnimationFrame(() => {
+        if (editorRef.current) editorRef.current.innerHTML = toSet || '';
+      });
+    } else {
+      // modo rico: pegar innerHTML do editor e colocar em formData.conteudo (HTML bruto)
+      const currHtml = editorRef.current ? editorRef.current.innerHTML : formData.conteudo;
+      setFormData(prev => ({ ...prev, conteudo: currHtml || '' }));
+      // atualizar originalHtmlRef com o html atual
+      originalHtmlRef.current = currHtml || null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipoConteudo]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -108,13 +190,10 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
         return;
       }
 
-      console.log('[NoticiaForm] Arquivo selecionado:', file.name, file.size, 'bytes');
 
       // Criar preview usando FileReader
       const reader = new FileReader();
       reader.onloadend = () => {
-        const preview = reader.result as string;
-        console.log('[NoticiaForm] Preview criado, tamanho:', preview.length);
       };
       reader.readAsDataURL(file);
 
@@ -125,8 +204,143 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
         imagemDestaque: URL.createObjectURL(file),
       }));
 
-      console.log('[NoticiaForm] Estado atualizado com arquivo');
     }
+  };
+
+  // Aplica formatação no editor contentEditable (modo simples)
+  const applyFormat = (command: string, value?: string) => {
+    try {
+      // execCommand ainda funciona para operações básicas em contentEditable
+      document.execCommand(command, false, value);
+      // sincroniza conteúdo para state
+      if (editorRef.current) {
+        setFormData(prev => ({ ...prev, conteudo: editorRef.current!.innerHTML }));
+      }
+    } catch (err) {
+      console.warn('format error', err);
+    }
+  };
+
+  const handleInsertLink = () => {
+    // abrir modal com preservação da seleção usando marcadores DOM
+    const sel = window.getSelection();
+    let selText = '';
+    savedSelectionRef.current = null;
+    savedMarkersRef.current = null;
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer) && !range.collapsed) {
+        // create unique ids
+        const uid = `m${Date.now()}${Math.floor(Math.random() * 10000)}`;
+        const startId = `sel-start-${uid}`;
+        const endId = `sel-end-${uid}`;
+        const startMarker = document.createElement('span');
+        const endMarker = document.createElement('span');
+        startMarker.id = startId;
+        endMarker.id = endId;
+        // keep markers invisible
+        startMarker.style.display = 'none';
+        endMarker.style.display = 'none';
+
+        // insert end marker first
+        const endRange = range.cloneRange();
+        endRange.collapse(false);
+        endRange.insertNode(endMarker);
+        // insert start marker
+        const startRange = range.cloneRange();
+        startRange.collapse(true);
+        startRange.insertNode(startMarker);
+
+        // save markers
+        savedMarkersRef.current = { startId, endId };
+        // also save a clone of range for fallback
+        savedSelectionRef.current = range.cloneRange();
+        selText = sel.toString();
+      }
+    }
+    setLinkInitialText(selText);
+    setLinkInitialUrl('https://');
+    setIsLinkModalOpen(true);
+  };
+
+  const handleLinkConfirm = (url: string, text: string) => {
+    if (!editorRef.current) { setIsLinkModalOpen(false); return; }
+
+    // normalize url
+    let finalUrl = url.trim();
+    if (finalUrl && !/^https?:\/\//i.test(finalUrl)) finalUrl = 'https://' + finalUrl;
+
+    editorRef.current.focus();
+
+    const escapeHtml = (str: string) => {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
+
+    // If markers exist, use them to build range
+    if (savedMarkersRef.current && editorRef.current) {
+      const { startId, endId } = savedMarkersRef.current;
+      const startMarker = document.getElementById(startId);
+      const endMarker = document.getElementById(endId);
+      try {
+        if (startMarker && endMarker && editorRef.current.contains(startMarker) && editorRef.current.contains(endMarker)) {
+          const range = document.createRange();
+          range.setStartAfter(startMarker);
+          range.setEndBefore(endMarker);
+          const contents = range.extractContents();
+          const a = document.createElement('a');
+          a.classList.add('LinkNoticia');
+          a.setAttribute('href', finalUrl);
+          a.setAttribute('target', '_blank');
+          a.setAttribute('rel', 'noopener noreferrer');
+          a.appendChild(contents);
+          range.insertNode(a);
+          // remove markers
+          startMarker.remove();
+          endMarker.remove();
+          // move caret after anchor
+          const after = document.createRange();
+          after.setStartAfter(a);
+          after.collapse(true);
+          const sel2 = window.getSelection();
+          if (sel2) { sel2.removeAllRanges(); sel2.addRange(after); }
+          if (editorRef.current) setFormData(prev => ({ ...prev, conteudo: editorRef.current!.innerHTML }));
+        } else {
+          // fallback if markers not found
+          if (text && text.trim().length > 0) {
+            applyFormat('insertHTML', `<a class="LinkNoticia" href="${escapeHtml(finalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`);
+          } else {
+            applyFormat('insertHTML', `<a class="LinkNoticia" href="${escapeHtml(finalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(finalUrl)}</a>`);
+          }
+        }
+      } catch (error) {
+        console.warn('insert link markers fallback', error);
+        // final fallback
+        applyFormat('createLink', finalUrl);
+      }
+      savedMarkersRef.current = null;
+    } else {
+      // no markers: simple insertion
+      if (text && text.trim().length > 0) {
+        applyFormat('insertHTML', `<a href="${escapeHtml(finalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`);
+      } else {
+        applyFormat('insertHTML', `<a href="${escapeHtml(finalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(finalUrl)}</a>`);
+      }
+    }
+
+    setIsLinkModalOpen(false);
+  };
+
+  // ensure markers are removed if modal closed
+  const clearSavedMarkers = () => {
+    if (savedMarkersRef.current && editorRef.current) {
+      const { startId, endId } = savedMarkersRef.current;
+      const s = document.getElementById(startId);
+      const e = document.getElementById(endId);
+      if (s) s.remove();
+      if (e) e.remove();
+    }
+    savedMarkersRef.current = null;
+    savedSelectionRef.current = null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,7 +362,8 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
     }
 
     // Conteúdo: obrigatório, mínimo 10 caracteres
-    if (!formData.conteudo || formData.conteudo.trim().length < 10) {
+    const conteudoTextLength = tipoConteudo === 'simples' ? (editorRef.current?.textContent || '').trim().length : (formData.conteudo || '').trim().length;
+    if (!conteudoTextLength || conteudoTextLength < 10) {
       erros.push('Conteúdo é obrigatório e deve ter no mínimo 10 caracteres.');
     }
 
@@ -167,14 +382,28 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
     }
 
     setErrosValidacao([]);
+
+    // Converter conteúdo para HTML quando estiver no modo 'simples'
+    let conteudoParaEnviar: string;
+    if (tipoConteudo === 'simples') {
+      // pegar o HTML gerado pelo editor (contentEditable)
+      conteudoParaEnviar = editorRef.current ? editorRef.current.innerHTML : (formData.conteudo || '');
+    } else {
+      conteudoParaEnviar = formData.conteudo || '';
+    }
+
     console.log('[NoticiaForm] Chamando onSubmit com dados:', {
       ...formData,
-      imagemArquivo: formData.imagemArquivo ? `File(${formData.imagemArquivo.name})` : 'null',
+      conteudo: formData.imagemArquivo ? `File(${formData.imagemArquivo.name})` : 'null',
+      // mostrar tamanho do conteudo enviado para debug
+      conteudoParaEnviarPreview: conteudoParaEnviar.substring(0, 200) + (conteudoParaEnviar.length > 200 ? '...' : ''),
     });
-    await onSubmit(formData);
+
+    await onSubmit({ ...formData, conteudo: conteudoParaEnviar });
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Erros de Validação */}
       {errosValidacao.length > 0 && (
@@ -418,31 +647,54 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
               </button>
             </div>
           </div>
-          <textarea
-            id="conteudo"
-            name="conteudo"
-            required
-            rows={15}
-            value={formData.conteudo}
-            onChange={handleChange}
-            className={`block w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent ${
-              tipoConteudo === 'rico' ? 'font-mono text-sm' : ''
-            }`}
-            placeholder={
-              tipoConteudo === 'simples'
-                ? 'Digite o conteúdo da notícia em texto simples. Quebras de linha serão preservadas automaticamente.'
-                : '<p>Conteúdo da notícia em HTML...</p>'
-            }
-          />
-          <p className="mt-1 text-sm text-gray-500">
+
+          {/* Toolbar para modo simples */}
+          {tipoConteudo === 'simples' && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              <button type="button" onClick={() => applyFormat('formatBlock', 'h3')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Título</button>
+              <button type="button" onClick={() => applyFormat('bold')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Negrito</button>
+              <button type="button" onClick={() => applyFormat('italic')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Itálico</button>
+              <button type="button" onClick={() => applyFormat('insertUnorderedList')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Lista</button>
+              <button type="button" onClick={handleInsertLink} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Link</button>
+              <button type="button" onClick={() => applyFormat('insertHTML', '<br/>')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Quebra (&lt;br/&gt;)</button>
+            </div>
+          )}
+
+          {/* Editor: contentEditable para modo simples; textarea para modo rico (HTML) */}
+          {tipoConteudo === 'simples' ? (
+            <div
+              ref={editorRef}
+              contentEditable
+              role="textbox"
+              aria-multiline
+              suppressContentEditableWarning
+              onInput={() => {
+                if (editorRef.current) setFormData(prev => ({ ...prev, conteudo: editorRef.current!.innerHTML }));
+              }}
+              className="min-h-60 block w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent bg-white"
+            />
+          ) : (
+            <textarea
+              id="conteudo"
+              name="conteudo"
+              required
+              rows={15}
+              ref={conteudoRef}
+              value={formData.conteudo}
+              onChange={handleChange}
+              className={`block w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent font-mono text-sm`}
+              placeholder="<p>Conteúdo da notícia em HTML...</p>"
+            />
+          )}
+           <p className="mt-1 text-sm text-gray-500">
             {tipoConteudo === 'simples' ? (
-              'Modo texto simples: escreva normalmente sem tags HTML. O texto será formatado automaticamente.'
+              'Modo texto simples: aplique formatação pela barra (negrito, itálico, título, lista, link).'
             ) : (
-              'Modo HTML: use tags HTML para formatar o conteúdo: <p>, <h3>, <ul>, <li>, <strong>, <em>, etc.'
+              'Modo HTML: edite o HTML diretamente: <p>, <h3>, <ul>, <li>, <strong>, <em>, etc.'
             )}
-            {' '}Mínimo de 10 caracteres. ({formData.conteudo.length}/10+)
-          </p>
-        </div>
+            {' '}Mínimo de 10 caracteres. {(tipoConteudo === 'simples' ? (editorRef.current?.textContent || '').length : formData.conteudo.length)}/10+
+           </p>
+         </div>
 
         {/* Destaque */}
         <div className="flex items-center gap-3">
@@ -509,6 +761,15 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
           )}
         </button>
       </div>
+
     </form>
+    <LinkModal
+      isOpen={isLinkModalOpen}
+      initialUrl={linkInitialUrl}
+      initialText={linkInitialText}
+      onConfirm={handleLinkConfirm}
+      onClose={() => { clearSavedMarkers(); setIsLinkModalOpen(false); }}
+    />
+    </>
   );
 };
