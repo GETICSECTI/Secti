@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /private
+
+# Sitemap
+Sitemap: https://secti.pe.gov.br/sitemap.xml
+
+# Crawl delay (em segundos)
+Crawl-delay: 1
+

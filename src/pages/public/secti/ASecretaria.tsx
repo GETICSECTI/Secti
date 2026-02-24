@@ -1,7 +1,15 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
+import { useSEO } from '../../../utils/useSEO.ts';
 
 export const ASecretaria = () => {
+  // SEO
+  useSEO({
+    title: 'A Secretaria',
+    description: 'Conheça a Secretaria de Ciência, Tecnologia e Inovação de Pernambuco, sua história, competências e papel no desenvolvimento científico e tecnológico do estado.',
+    canonical: 'https://secti.pe.gov.br/secti/a-secretaria',
+    keywords: 'SECTI, Secretaria, Ciência, Tecnologia, Inovação, Pernambuco',
+  });
   return (
     <PublicLayout>
       <HeroSection

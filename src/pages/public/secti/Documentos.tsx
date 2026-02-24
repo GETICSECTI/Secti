@@ -1,27 +1,116 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
-import { DocumentList } from '../../../components/DocumentList.tsx';
-import type { DocumentItem } from '../../../components/DocumentList.tsx';
+import { DocumentosPublicosList } from '../../../components/DocumentosPublicosList';
+import type { DocumentoPublicoItem } from '../../../components/DocumentosPublicosList';
+import { useState, useEffect, useCallback } from 'react';
+import { useSEO } from '../../../utils/useSEO.ts';
+import { documentosService } from '../../../services/documentosService.ts';
+import { tagService, type TagPublica } from '../../../services/tagService.ts';
+import { handleApiError } from '../../../utils/errorHandler';
 
-// Dados de exemplo - substituir por dados reais da API
-const documentosMock: DocumentItem[] = [
-  { id: 1, nome: 'Relatório Anual 2023', tipo: 'pdf', tamanho: '2.5 MB', categoria: 'Relatórios', url: '#', dataPublicacao: '15/12/2023' },
-  { id: 2, nome: 'Plano Estratégico de Inovação', tipo: 'pdf', tamanho: '1.8 MB', categoria: 'Planejamento', url: '#', dataPublicacao: '22/11/2023' },
-  { id: 3, nome: 'Lei Estadual 18.139', tipo: 'pdf', tamanho: '850 KB', categoria: 'Legislação', url: '#', dataPublicacao: '18/01/2023' },
-  { id: 4, nome: 'Edital de Fomento 2024', tipo: 'docx', tamanho: '1.2 MB', categoria: 'Editais', url: '#', dataPublicacao: '05/01/2024' },
-  { id: 5, nome: 'Prestação de Contas 2023', tipo: 'pdf', tamanho: '3.1 MB', categoria: 'Relatórios', url: '#', dataPublicacao: '28/02/2024' },
-  { id: 6, nome: 'Manual de Normas Técnicas', tipo: 'doc', tamanho: '945 KB', categoria: 'Manuais', url: '#', dataPublicacao: '10/03/2024' },
-  { id: 7, nome: 'Regulamento Interno', tipo: 'pdf', tamanho: '678 KB', categoria: 'Legislação', url: '#', dataPublicacao: '14/06/2024' },
-  { id: 8, nome: 'Projeto Tecnologia na Educação', tipo: 'pdf', tamanho: '2.2 MB', categoria: 'Projetos', url: '#', dataPublicacao: '20/08/2024' },
-  { id: 9, nome: 'Portaria de Regulamentação', tipo: 'pdf', tamanho: '2.2 MB', categoria: 'Portaria', url: '#', dataPublicacao: '30/09/2024' },
-  { id: 10, nome: 'Portaria de Regulamentação', tipo: 'pdf', tamanho: '2.2 MB', categoria: 'Portaria', url: '#', dataPublicacao: '30/09/2024' },
-  { id: 11, nome: 'Portaria de Regulamentação', tipo: 'pdf', tamanho: '2.2 MB', categoria: 'Portaria', url: '#', dataPublicacao: '30/09/2024' },
-
-];
 
 export const Documentos = () => {
-  // Extrair categorias únicas
-  const categorias = ['Todas', 'Relatórios', 'Planejamento', 'Legislação', 'Editais', 'Manuais', 'Projetos', 'Portaria'];
+  // SEO
+  useSEO({
+    title: 'Documentos',
+    description: 'Consulte os documentos públicos da Secretaria de Ciência, Tecnologia e Inovação de Pernambuco.',
+    canonical: 'https://secti.pe.gov.br/secti/documentos',
+    keywords: 'Documentos, SECTI, Pernambuco, Transparência',
+  });
+  const [documentos, setDocumentos] = useState<DocumentoPublicoItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [filtroTitulo, setFiltroTitulo] = useState('');
+  const [filtroAno, setFiltroAno] = useState<number | undefined>();
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroTagId, setFiltroTagId] = useState<number | undefined>();
+  const [tags, setTags] = useState<TagPublica[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
+
+  // Carregar tags no carregamento inicial
+  useEffect(() => {
+    const carregarTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await tagService.listarPublico({
+          pagina: 1,
+          itensPorPagina: 50,
+        });
+        const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
+        setTags(tagsOrdenadas);
+      } catch (err) {
+        console.error('Erro ao carregar tags:', err);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    carregarTags();
+  }, []);
+
+  const carregarDocumentos = useCallback(async (pagina: number, titulo: string = '', ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await documentosService.listarPublico({
+        titulo: titulo || undefined,
+        ano: ano,
+        dataPublicacao: dataPublicacao || undefined,
+        tagIds: tagIds,
+        ordenarPor: 'anopublicacao',
+        ordenarDescendente: true,
+        pagina: pagina,
+        itensPorPagina: 10,
+      });
+
+      const documentosFormatados: DocumentoPublicoItem[] = response.documentos.map(doc => ({
+        id: doc.id,
+        nome: doc.titulo,
+        tipo: 'pdf' as const,
+        tamanho: 'Não disponível',
+        categoria: 'Documentos',
+        url: doc.caminhoArquivo,
+        dataPublicacao: doc.dataPublicacao,
+        tags: doc.tags,
+      }));
+
+      setDocumentos(documentosFormatados);
+      setTotalPaginas(response.totalPaginas);
+    } catch (err) {
+      const mensagemErro = handleApiError(err);
+      setError(mensagemErro);
+      console.error('Erro ao carregar documentos:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarDocumentos(paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId ? [filtroTagId] : undefined);
+  }, [paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId, carregarDocumentos]);
+
+  const handleMudarPagina = (novaPagina: number) => {
+    setPaginaAtual(novaPagina);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBuscar = (titulo: string, ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
+    setFiltroTitulo(titulo);
+    setFiltroAno(ano);
+    setFiltroDataPublicacao(dataPublicacao || '');
+    setFiltroTagId(tagIds && tagIds.length > 0 ? tagIds[0] : undefined);
+    setPaginaAtual(1);
+  };
+
+  const handleLimpar = () => {
+    setFiltroTitulo('');
+    setFiltroAno(undefined);
+    setFiltroDataPublicacao('');
+    setFiltroTagId(undefined);
+    setPaginaAtual(1);
+  };
 
   return (
     <PublicLayout>
@@ -33,11 +122,28 @@ export const Documentos = () => {
       {/* Content Section */}
       <section className="py-12 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <DocumentList
-            documents={documentosMock}
-            categories={categorias}
-            showCategoryFilter={true}
-          />
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+              <p className="text-red-700 font-medium">Erro ao carregar documentos: {error}</p>
+            </div>
+          )}
+
+          {/* Documents List */}
+          {!error && (
+            <DocumentosPublicosList
+              documents={documentos}
+              tags={tags}
+              isLoading={isLoading}
+              isLoadingTags={isLoadingTags}
+              totalPaginas={totalPaginas}
+              paginaAtual={paginaAtual}
+              onMudarPagina={handleMudarPagina}
+              onFiltroChange={handleBuscar}
+              onLimpar={handleLimpar}
+            />
+          )}
         </div>
       </section>
     </PublicLayout>

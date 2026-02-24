@@ -1,5 +1,6 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
+import { useSEO } from '../../../utils/useSEO.ts';
 
 // Import das imagens
 import ManifestacaoImg from '../../../assets/Manifestacao.png';
@@ -10,6 +11,14 @@ import ConsultaLogadaImg from '../../../assets/ConsultaLogada.jpg';
 import LGPDPEImg from '../../../assets/LGPDPE.png';
 
 export const FaleComOuvidoria = () => {
+  // SEO
+  useSEO({
+    title: 'Fale com a Ouvidoria',
+    description: 'Canais para entrar em contato com a Ouvidoria da Secretaria de Ciência, Tecnologia e Inovação de Pernambuco.',
+    canonical: 'https://secti.pe.gov.br/ouvidoria/fale-com-ouvidoria',
+    keywords: 'Contato, Ouvidoria, SECTI, Reclamação, Sugestão',
+  });
+
   // Array com as opções de atendimento
   const opcoes = [
     {

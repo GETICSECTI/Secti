@@ -1,8 +1,16 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
-import Mauricelia from "../../../../public/Mauricelia-Montenegro.jpg"
+import { useSEO } from '../../../utils/useSEO.ts';
+import Mauricelia from "../../../assets/Mauricelia-Montenegro.jpg"
 
 export const ASecretariaCargo = () => {
+  // SEO
+  useSEO({
+    title: 'A Secretária',
+    description: 'Conheça a Secretária de Ciência, Tecnologia e Inovação de Pernambuco e sua trajetória profissional.',
+    canonical: 'https://secti.pe.gov.br/secti/a-secretaria-cargo',
+    keywords: 'Secretária, SECTI, Pernambuco, Gestão',
+  });
   return (
     <PublicLayout>
       <HeroSection

@@ -8,7 +8,7 @@ import MarcaCTI from "../assets/MarcaCTI.png";
 import MarcaGov from "../assets/MarcaGov.png";
 import MarcaCTINegativa from "../assets/MarcaCTINegativa.png";
 import MarcaCTIPositiva from "../assets/MarcaCTIPositiva.png";
-import { fetchTransparenciaMenus, type TransparenciaMenuItem } from "../services/transparenciaService.ts";
+import { transparenciaService, type TransparenciaSubmenuPublico } from "../services/transparenciaService.ts";
 
 interface PublicLayoutProps {
   children: ReactNode;
@@ -26,7 +26,7 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
   const [sectiMobileOpen, setSectiMobileOpen] = useState<boolean>(false);
   const [transparenciaMobileOpen, setTransparenciaMobileOpen] = useState<boolean>(false);
   const [ouvidoriaMobileOpen, setOuvidoriaMobileOpen] = useState<boolean>(false);
-  const [transparenciaMenus, setTransparenciaMenus] = useState<TransparenciaMenuItem[]>([]);
+  const [transparenciaMenus, setTransparenciaMenus] = useState<TransparenciaSubmenuPublico[]>([]);
   const [loadingMenus, setLoadingMenus] = useState<boolean>(true);
 
   // Helper function to check if a path is active
@@ -63,8 +63,9 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
     const loadTransparenciaMenus = async () => {
       try {
         setLoadingMenus(true);
-        const menus = await fetchTransparenciaMenus();
-        setTransparenciaMenus(menus);
+        const response = await transparenciaService.listar();
+        // O endpoint público retorna apenas titulo e url
+        setTransparenciaMenus(response.submenus);
       } catch (error) {
         console.error('Erro ao carregar menus de transparência:', error);
         setTransparenciaMenus([]);
@@ -95,7 +96,6 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
     };
 
     if (mobileOpen) {
-      // Avoid layout shift when scrollbar disappears
       const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
       if (scrollBarWidth > 0) body.style.paddingRight = `${scrollBarWidth}px`;
       body.style.overflow = 'hidden';
@@ -167,6 +167,7 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
                           <Link to="/secti/servidor" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/secti/servidor') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Servidor</Link>
                           <Link to="/secti/parcerias" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/secti/parcerias') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Parcerias</Link>
                           <Link to="/secti/legislacao" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/secti/legislacao') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Legislação</Link>
+                          <Link to="/secti/relatorios" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/secti/relatorios') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Relatórios</Link>
                         </div>
                       </div>
                     )}
@@ -200,13 +201,15 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
                             <div className="px-4 py-2 text-sm text-gray-500">Carregando...</div>
                           ) : (
                             transparenciaMenus.map((menu) => (
-                              <Link 
-                                key={menu.id} 
-                                to={menu.url} 
-                                className={`block px-4 py-2 text-sm transition-colors ${isActiveLink(menu.url) ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}
+                              <a
+                                key={menu.titulo}
+                                href={menu.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`block px-4 py-2 text-sm transition-colors text-gray-700 hover:bg-gray-100`}
                               >
                                 {menu.titulo}
-                              </Link>
+                              </a>
                             ))
                           )}
                         </div>
@@ -257,7 +260,6 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
                         <div className="py-1">
                           <Link to="/ouvidoria/apresentacao" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/ouvidoria/apresentacao') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Apresentação da Ouvidoria</Link>
                           <Link to="/ouvidoria/fale-com-ouvidoria" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/ouvidoria/fale-com-ouvidoria') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Fale com a Ouvidoria - Ouve.pe</Link>
-                          <Link to="/ouvidoria/processos-e-relatorios" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/ouvidoria/processos-e-relatorios') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Processos e Relatórios</Link>
                           <Link to="/ouvidoria/rede-ouvidorias" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/ouvidoria/rede-ouvidorias') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Rede de Ouvidorias da Secti</Link>
                         </div>
                       </div>
@@ -407,14 +409,15 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
                         <div className="px-3 py-2 text-sm text-gray-500">Carregando...</div>
                       ) : (
                         transparenciaMenus.map((menu) => (
-                          <Link
-                            key={menu.id}
-                            to={menu.url}
-                            onClick={() => setMobileOpen(false)}
-                            className={`block px-3 py-2 rounded-md text-sm transition-colors ${isActiveLink(menu.url) ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'}`}
+                          <a
+                            key={menu.titulo}
+                            href={menu.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`block px-3 py-2 rounded-md text-sm transition-colors text-gray-600 hover:bg-gray-100`}
                           >
                             {menu.titulo}
-                          </Link>
+                          </a>
                         ))
                       )}
                     </div>
@@ -438,7 +441,6 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
                     <div className="ml-4 space-y-1 mt-1">
                       <Link to="/ouvidoria/apresentacao" onClick={() => setMobileOpen(false)} className={`block px-3 py-2 rounded-md text-sm transition-colors ${isActiveLink('/ouvidoria/apresentacao') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'}`}>Apresentação da Ouvidoria</Link>
                       <Link to="/ouvidoria/fale-com-ouvidoria" onClick={() => setMobileOpen(false)} className={`block px-3 py-2 rounded-md text-sm transition-colors ${isActiveLink('/ouvidoria/fale-com-ouvidoria') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'}`}>Fale com a Ouvidoria - Ouve.pe</Link>
-                      <Link to="/ouvidoria/processos-e-relatorios" onClick={() => setMobileOpen(false)} className={`block px-3 py-2 rounded-md text-sm transition-colors ${isActiveLink('/ouvidoria/processos-e-relatorios') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'}`}>Processos e Relatórios</Link>
                       <Link to="/ouvidoria/rede-ouvidorias" onClick={() => setMobileOpen(false)} className={`block px-3 py-2 rounded-md text-sm transition-colors ${isActiveLink('/ouvidoria/rede-ouvidorias') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'}`}>Rede de Ouvidorias da Secti</Link>
                     </div>
                   )}
@@ -463,40 +465,71 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
         <footer>
           <div className="bg-[#195CE3] text-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4 py-6">
-                <div className="flex items-center justify-center sm:justify-start">
-                  <img src={MarcaCTINegativa} alt="Marca CTI" className="h-16" />
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 py-12">
+                {/* Logo Section */}
+                <div className="flex flex-col items-center justify-center md:items-start md:justify-start">
+                  <img src={MarcaCTINegativa} alt="Marca CTI" className="h-16 mb-4" />
                 </div>
-                <div className="sm:col-span-1 flex items-center justify-center">
-                  <div>
-                    <div className="font-semibold">Coluna 2</div>
-                    <div className="text-sm">Informações</div>
-                  </div>
+
+                {/* About Section */}
+                <div className="text-center md:text-left">
+                  <h3 className="font-semibold text-lg mb-4">Sobre a SECTI</h3>
+                  <nav className="space-y-2 flex flex-col items-center md:items-start">
+                    <Link to="/secti/historia" onClick={() => setMobileOpen(false)} className="text-blue-100 hover:text-white transition-colors text-sm block">
+                      História da Secretaria
+                    </Link>
+                    <Link to="/secti/a-secretaria" onClick={() => setMobileOpen(false)} className="text-blue-100 hover:text-white transition-colors text-sm block">
+                      A Secretaria
+                    </Link>
+                    <Link to="/secti/organograma" onClick={() => setMobileOpen(false)} className="text-blue-100 hover:text-white transition-colors text-sm block">
+                      Organograma
+                    </Link>
+                    <Link to="/secti/certificacoes" onClick={() => setMobileOpen(false)} className="text-blue-100 hover:text-white transition-colors text-sm block">
+                      Certificações
+                    </Link>
+                  </nav>
                 </div>
-                <div className="sm:col-span-1 flex items-center justify-center">
-                  <div>
-                    <div className="font-semibold">Coluna 3</div>
-                    <div className="text-sm">Links úteis</div>
-                  </div>
+
+                {/* Services Section */}
+                <div className="text-center md:text-left">
+                  <h3 className="font-semibold text-lg mb-4">Serviços</h3>
+                  <nav className="space-y-2 flex flex-col items-center md:items-start">
+                    <Link to="/editais" onClick={() => setMobileOpen(false)} className="text-blue-100 hover:text-white transition-colors text-sm block">
+                      Editais
+                    </Link>
+                    <Link to="/projetos" onClick={() => setMobileOpen(false)} className="text-blue-100 hover:text-white transition-colors text-sm block">
+                      Projetos
+                    </Link>
+                    <Link to="/secti/legislacao" onClick={() => setMobileOpen(false)} className="text-blue-100 hover:text-white transition-colors text-sm block">
+                      Legislação
+                    </Link>
+                    <Link to="/ouvidoria/apresentacao" onClick={() => setMobileOpen(false)} className="text-blue-100 hover:text-white transition-colors text-sm block">
+                      Ouvidoria
+                    </Link>
+                  </nav>
                 </div>
-                <div className="sm:col-span-1 flex mt-2 items-center justify-center md:justify-end">
-                  <div className="flex items-center space-x-4">
-                    <a href="https://www.instagram.com/secti.pernambuco/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-white hover:text-gray-200 transition duration-200 hover:scale-110">
+
+                {/* Contact & Social Section */}
+                <div className="text-center md:text-left flex flex-col items-center md:items-start">
+                  <h3 className="font-semibold text-lg mb-4">Conecte-se</h3>
+                  <div className="flex items-center space-x-4 mb-4">
+                    <a href="https://www.instagram.com/secti.pernambuco/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-white hover:text-blue-200 transition duration-200 hover:scale-110">
                       <FontAwesomeIcon icon={faInstagram} className="text-2xl" />
                     </a>
 
-                    <a href="https://www.linkedin.com/company/sectipe/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-white hover:text-gray-200 transition duration-200 hover:scale-110">
+                    <a href="https://www.linkedin.com/company/sectipe/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-white hover:text-blue-200 transition duration-200 hover:scale-110">
                       <FontAwesomeIcon icon={faLinkedin} className="text-2xl" />
                     </a>
 
-                    <a href="https://x.com/SectiPE" target="_blank" rel="noopener noreferrer" aria-label="X" className="text-white hover:text-gray-200 transition duration-200 hover:scale-110">
+                    <a href="https://x.com/SectiPE" target="_blank" rel="noopener noreferrer" aria-label="X" className="text-white hover:text-blue-200 transition duration-200 hover:scale-110">
                       <FontAwesomeIcon icon={faXTwitter} className="text-2xl" />
                     </a>
 
-                    <a href="https://www.youtube.com/@sectipernambuco" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="text-white hover:text-gray-200 transition duration-200 hover:scale-110">
+                    <a href="https://www.youtube.com/@sectipernambuco" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="text-white hover:text-blue-200 transition duration-200 hover:scale-110">
                       <FontAwesomeIcon icon={faYoutube} className="text-2xl" />
                     </a>
                   </div>
+                  <p className="text-sm text-blue-100">Acompanhe nossas redes sociais para ficar atualizado.</p>
                 </div>
 
               </div>

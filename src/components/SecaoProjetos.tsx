@@ -1,19 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
+import { projetosService } from '../services/projetosService';
+import { handleApiError } from '../utils/errorHandler';
 
 export type ProjetoItem = {
     id?: string | number;
-    nome: string;
-    marca: string; // URL da imagem da marca
+    titulo?: string;
+    nome?: string;
+    logoCaminho?: string;
+    marca?: string; // URL da imagem da marca
     link?: string; // Link opcional para o projeto
+    urlProjeto?: string;
 };
 
 type SecaoProjetosProps = {
-    projetos: ProjetoItem[];
+    projetos?: ProjetoItem[];
 };
 
-export const SecaoProjetos: React.FC<SecaoProjetosProps> = ({ projetos }) => {
+export const SecaoProjetos: React.FC<SecaoProjetosProps> = ({ projetos: projetosInicial = [] }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [projetos, setProjetos] = useState<ProjetoItem[]>(projetosInicial);
+
+    useEffect(() => {
+        const carregarProjetos = async () => {
+            try {
+                const response = await projetosService.listarPublico({
+                    pagina: 1,
+                    itensPorPagina: 12,
+                });
+
+                // Mapear projetos da API para o formato esperado
+                const projetosFormatados = response.projetos.map(projeto => ({
+                    id: projeto.id,
+                    titulo: projeto.titulo,
+                    nome: projeto.titulo,
+                    logoCaminho: projeto.logoCaminho,
+                    marca: projeto.logoCaminho,
+                    link: `/projetos/${projeto.urlProjeto}`,
+                    urlProjeto: projeto.urlProjeto,
+                }));
+
+                setProjetos(projetosFormatados);
+            } catch (error) {
+                console.error('Erro ao carregar projetos:', handleApiError(error));
+                // Manter projetos iniciais em caso de erro
+                if (projetosInicial.length > 0) {
+                    setProjetos(projetosInicial);
+                }
+            }
+        };
+
+        carregarProjetos();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Função para normalizar strings removendo acentos
     const normalizeString = (str: string) => {
@@ -21,7 +60,7 @@ export const SecaoProjetos: React.FC<SecaoProjetosProps> = ({ projetos }) => {
     };
 
     const filteredProjetos = projetos.filter(projeto =>
-        normalizeString(projeto.nome).includes(normalizeString(searchTerm))
+        normalizeString(projeto.titulo || projeto.nome || '').includes(normalizeString(searchTerm))
     );
 
     return (
@@ -55,17 +94,26 @@ export const SecaoProjetos: React.FC<SecaoProjetosProps> = ({ projetos }) => {
                         {filteredProjetos.map((projeto) => (
                             <a
                                 key={projeto.id ?? projeto.nome}
-                                href={projeto.link || `/projeto/${projeto.id}`}
+                                href={projeto.link || `/projetos/${projeto.urlProjeto || projeto.id}`}
                                 className="bg-white rounded-2xl transition duration-200 hover:scale-105 shadow-md overflow-hidden hover:shadow-lg p-6 text-center block"
                             >
-                                <div className="mb-4">
-                                    <img
-                                        src={projeto.marca}
-                                        alt={`Marca do projeto ${projeto.nome}`}
-                                        className="w-24 h-24 mx-auto object-contain"
-                                    />
-                                </div>
-                                <h3 className="text-lg font-bold text-[#0C2856]">{projeto.nome}</h3>
+                                {projeto.marca ? (
+                                    <div className="mb-4 h-24 flex items-center justify-center">
+                                        <img
+                                            src={projeto.marca}
+                                            alt={`Logo do projeto ${projeto.titulo || projeto.nome}`}
+                                            className="max-w-full max-h-24 object-contain"
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="mb-4 h-24 flex items-center justify-center bg-gray-200 rounded">
+                                        <span className="text-gray-500 text-sm">Sem imagem</span>
+                                    </div>
+                                )}
+                                <h3 className="text-lg font-bold text-[#0C2856]">{projeto.titulo || projeto.nome}</h3>
                             </a>
                         ))}
                     </div>

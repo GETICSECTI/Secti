@@ -1,5 +1,5 @@
 import { PrivateLayout } from '../../layouts/PrivateLayout';
-import { useAuth } from '../../contexts/useAuth';
+import { useAuth } from '../../contexts';
 
 export const SettingsPage = () => {
   const { user } = useAuth();
@@ -31,7 +31,7 @@ export const SettingsPage = () => {
               </label>
               <input
                 type="text"
-                value={user?.name || ''}
+                value={user?.nome || ''}
                 readOnly
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
               />

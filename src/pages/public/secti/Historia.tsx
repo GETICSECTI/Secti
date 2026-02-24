@@ -1,7 +1,15 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
+import { useSEO } from '../../../utils/useSEO.ts';
 
 export const Historia = () => {
+  // SEO
+  useSEO({
+    title: 'História',
+    description: 'Conheça a história da Secretaria de Ciência, Tecnologia e Inovação de Pernambuco e sua evolução ao longo dos anos.',
+    canonical: 'https://secti.pe.gov.br/secti/historia',
+    keywords: 'História, SECTI, Pernambuco, Trajetória',
+  });
   return (
     <PublicLayout>
       <HeroSection

@@ -1,46 +1,54 @@
-import type { LoginCredentials, AuthResponse, User } from '../types/auth';
+import type { LoginCredentials, AuthData, User } from '../types/auth';
 import { apiClient } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
 
-const USER_KEY = 'auth_user';
+const AUTH_DATA_KEY = 'auth_data';
 
-// Auth service using HttpOnly cookies for token storage
+// Serviço de autenticação utilizando localStorage
 export const authService = {
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+  async login(credentials: LoginCredentials): Promise<AuthData> {
+    let response;
+
     try {
       // Make API call to login endpoint
-      const response = await apiClient.post<AuthResponse>(
+      response = await apiClient.post<AuthData>(
         API_ENDPOINTS.auth.login,
         {
           email: credentials.email,
           senha: credentials.password, // API expects 'senha' instead of 'password'
         }
       );
-
-      const authData = response.data;
-      const user = authData.usuario;
-
-      // Save user data to localStorage
-      this.saveUser(user);
-
-      return authData;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login API error:', error);
       const errorMessage = handleApiError(error);
       throw new Error(errorMessage);
     }
+
+    const authData = response.data;
+
+    // Validar status do usuário FORA do try-catch de API
+    // Status 1 = Ativo, Status 2 = Inativo, Status 3 = Admin
+    if (authData.usuario.status === 2) {
+      // Status 2 = Inativo (Suspenso) - não salvar dados de autenticação
+      throw new Error('Sua conta está suspensa. Por favor, entre em contato com um administrador para recuperar o acesso.');
+    }
+
+    // Salvar todos os dados de autenticação no localStorage
+    this.saveAuthData(authData);
+
+    return authData;
   },
 
   async logout(): Promise<void> {
     try {
-      // Call logout endpoint to clear HttpOnly cookie
+      // Chamar logout para invalidar no backend se necessário
       await apiClient.post(API_ENDPOINTS.auth.logout);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear user data from localStorage
-      localStorage.removeItem(USER_KEY);
+      // Limpar dados de autenticação
+      localStorage.removeItem(AUTH_DATA_KEY);
     }
   },
 
@@ -69,23 +77,24 @@ export const authService = {
     }
   },
 
-  async getCurrentUser(): Promise<User | null> {
-    // Since there's no /me endpoint in the API, just get from localStorage
-    return this.getUser();
+  saveAuthData(authData: AuthData): void {
+    localStorage.setItem(AUTH_DATA_KEY, JSON.stringify(authData));
   },
 
-  saveUser(user: User): void {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-  },
-
-  getUser(): User | null {
-    const userStr = localStorage.getItem(USER_KEY);
-    if (!userStr) return null;
+  getAuthData(): AuthData | null {
+    const authStr = localStorage.getItem(AUTH_DATA_KEY);
+    if (!authStr) return null;
 
     try {
-      return JSON.parse(userStr);
+      return JSON.parse(authStr);
     } catch {
       return null;
     }
+  },
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getUser(): User | null {
+    const authData = this.getAuthData();
+    return authData ? authData.usuario : null;
   },
 };

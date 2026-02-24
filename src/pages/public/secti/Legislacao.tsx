@@ -1,29 +1,117 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
-import { DocumentList } from '../../../components/DocumentList.tsx';
-import type { DocumentItem } from '../../../components/DocumentList.tsx';
-
-// Dados de exemplo - substituir por dados reais da API
-const documentosLegislacaoMock: DocumentItem[] = [
-  { id: 1, nome: 'Lei Estadual 18.139 - Sistema Estadual de C&T&I', tipo: 'pdf', tamanho: '850 KB', categoria: 'Legislação', url: '#', dataPublicacao: '18/01/2023' },
-  { id: 2, nome: 'Decreto Nº 54.321 - Regulamentação SECTI', tipo: 'pdf', tamanho: '1.2 MB', categoria: 'Legislação', url: '#', dataPublicacao: '25/02/2023' },
-  { id: 3, nome: 'Lei Complementar 142 - Incentivos Fiscais', tipo: 'pdf', tamanho: '2.1 MB', categoria: 'Legislação', url: '#', dataPublicacao: '15/03/2023' },
-  { id: 4, nome: 'Portaria SECTI Nº 045/2023', tipo: 'pdf', tamanho: '678 KB', categoria: 'Legislação', url: '#', dataPublicacao: '10/04/2023' },
-  { id: 5, nome: 'Resolução do Conselho Estadual de C&T', tipo: 'pdf', tamanho: '945 KB', categoria: 'Legislação', url: '#', dataPublicacao: '22/05/2023' },
-  { id: 6, nome: 'Lei Federal 10.973 - Lei de Inovação', tipo: 'pdf', tamanho: '1.5 MB', categoria: 'Legislação', url: '#', dataPublicacao: '02/12/2004' },
-  { id: 7, nome: 'Marco Legal da Ciência e Tecnologia', tipo: 'pdf', tamanho: '2.8 MB', categoria: 'Legislação', url: '#', dataPublicacao: '11/01/2016' },
-  { id: 8, nome: 'Instrução Normativa SECTI Nº 12/2024', tipo: 'pdf', tamanho: '1.1 MB', categoria: 'Legislação', url: '#', dataPublicacao: '08/06/2024' },
-  { id: 9, nome: 'Decreto Estadual de Parques Tecnológicos', tipo: 'pdf', tamanho: '1.7 MB', categoria: 'Legislação', url: '#', dataPublicacao: '14/08/2024' },
-  { id: 10, nome: 'Regulamento de Startups e Inovação', tipo: 'docx', tamanho: '890 KB', categoria: 'Legislação', url: '#', dataPublicacao: '30/09/2024' },
-  { id: 11, nome: 'Lei de Proteção à Propriedade Intelectual', tipo: 'pdf', tamanho: '1.9 MB', categoria: 'Legislação', url: '#', dataPublicacao: '12/11/2024' },
-];
+import { DocumentosParceriasPublicosList } from '../../../components/DocumentosParceriasPublicosList';
+import type { DocumentoParceriaPublicoItem } from '../../../components/DocumentosParceriasPublicosList';
+import { useState, useEffect, useCallback } from 'react';
+import { useSEO } from '../../../utils/useSEO.ts';
+import { legislacaoService } from '../../../services/legislacaoService';
+import { tagService, type TagPublica } from '../../../services/tagService.ts';
+import { handleApiError } from '../../../utils/errorHandler';
 
 export const Legislacao = () => {
-  const emptyStateIcon = (
-    <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  );
+  // SEO
+  useSEO({
+    title: 'Legislação',
+    description: 'Acesso à legislação aplicável à Secretaria de Ciência, Tecnologia e Inovação de Pernambuco.',
+    canonical: 'https://secti.pe.gov.br/secti/legislacao',
+    keywords: 'Legislação, Leis, SECTI, Pernambuco',
+  });
+  const [documentos, setDocumentos] = useState<DocumentoParceriaPublicoItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [filtroTitulo, setFiltroTitulo] = useState('');
+  const [filtroAno, setFiltroAno] = useState<number | undefined>();
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroTagId, setFiltroTagId] = useState<number | undefined>();
+  const [tags, setTags] = useState<TagPublica[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
+
+  // Carregar tags no carregamento inicial
+  useEffect(() => {
+    const carregarTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await tagService.listarPublico({
+          pagina: 1,
+          itensPorPagina: 50,
+        });
+        const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
+        setTags(tagsOrdenadas);
+      } catch (err) {
+        console.error('Erro ao carregar tags:', err);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    carregarTags();
+  }, []);
+
+  const carregarLegislacao = useCallback(async (pagina: number, titulo: string = '', ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Buscar legislação pública do endpoint
+      const response = await legislacaoService.listarPublico({
+        titulo: titulo || undefined,
+        ano: ano,
+        dataPublicacao: dataPublicacao || undefined,
+        tagIds: tagIds,
+        ordenarPor: 'anopublicacao',
+        ordenarDescendente: true,
+        pagina: pagina,
+        itensPorPagina: 10,
+      });
+
+      // Converter resposta para formato DocumentoParceriaPublicoItem
+      const documentosFormatados: DocumentoParceriaPublicoItem[] = response.legislacoes.map(doc => ({
+        id: doc.id,
+        nome: doc.titulo,
+        tipo: 'pdf' as const,
+        tamanho: 'Não disponível',
+        categoria: 'Legislação',
+        url: doc.caminhoArquivo,
+        dataPublicacao: doc.dataPublicacao,
+        tags: doc.tags,
+      }));
+
+      setDocumentos(documentosFormatados);
+      setTotalPaginas(response.totalPaginas);
+    } catch (err) {
+      const mensagemErro = handleApiError(err);
+      setError(mensagemErro);
+      console.error('Erro ao carregar legislação:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarLegislacao(paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId ? [filtroTagId] : undefined);
+  }, [paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId, carregarLegislacao]);
+
+  const handleMudarPagina = (novaPagina: number) => {
+    setPaginaAtual(novaPagina);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBuscar = (titulo: string, ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
+    setFiltroTitulo(titulo);
+    setFiltroAno(ano);
+    setFiltroDataPublicacao(dataPublicacao || '');
+    setFiltroTagId(tagIds && tagIds.length > 0 ? tagIds[0] : undefined);
+    setPaginaAtual(1);
+  };
+
+  const handleLimpar = () => {
+    setFiltroTitulo('');
+    setFiltroAno(undefined);
+    setFiltroDataPublicacao('');
+    setFiltroTagId(undefined);
+    setPaginaAtual(1);
+  };
 
   return (
     <PublicLayout>
@@ -39,20 +127,30 @@ export const Legislacao = () => {
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold text-[#0C2856] mb-4">Marco Legal</h2>
             <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Consulte toda a legislação pertinente ao Sistema Estadual de Ciência, Tecnologia e Inovação de Pernambuco,
+                Consulte toda a legislação pertinente ao Sistema Estadual de Ciência, Tecnologia e Inovação de Pernambuco,
               incluindo leis, decretos, portarias e demais normas regulamentares.
             </p>
           </div>
 
-          <DocumentList
-            documents={documentosLegislacaoMock}
-            categories={['Legislação']}
-            showCategoryFilter={false}
-            emptyStateIcon={emptyStateIcon}
-            emptyStateTitle="Nenhum documento legislativo encontrado"
-            emptyStateDescription="Tente ajustar os filtros de busca"
-            getCategoryColor={() => 'bg-[#0C2856] text-white'}
-          />
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+          <p className="text-red-700 font-medium">Erro ao carregar legislação: {error}</p>
+        </div>
+      )}
+
+      {/* Documents List */}
+      <DocumentosParceriasPublicosList
+        documents={documentos}
+        tags={tags}
+        isLoading={isLoading}
+        isLoadingTags={isLoadingTags}
+        totalPaginas={totalPaginas}
+        paginaAtual={paginaAtual}
+        onMudarPagina={handleMudarPagina}
+        onFiltroChange={handleBuscar}
+        onLimpar={handleLimpar}
+      />
         </div>
       </section>
     </PublicLayout>

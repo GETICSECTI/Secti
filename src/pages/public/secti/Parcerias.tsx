@@ -1,29 +1,119 @@
+// Parcerias - Tela de listagem de parcerias públicas
+
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
-import { DocumentList} from '../../../components/DocumentList.tsx';
-import type {DocumentItem} from "../../../components/DocumentList.tsx";
-
-// Dados de exemplo - substituir por dados reais da API
-const documentosParceriasMock: DocumentItem[] = [
-  { id: 1, nome: 'Acordo de Cooperação com UFPE', tipo: 'pdf', tamanho: '2.1 MB', categoria: 'Parcerias', url: '#', dataPublicacao: '15/01/2024' },
-  { id: 2, nome: 'Convênio SECTI-Facepe 2024', tipo: 'pdf', tamanho: '1.8 MB', categoria: 'Parcerias', url: '#', dataPublicacao: '22/02/2024' },
-  { id: 3, nome: 'Protocolo Porto Digital', tipo: 'pdf', tamanho: '1.5 MB', categoria: 'Parcerias', url: '#', dataPublicacao: '10/03/2024' },
-  { id: 4, nome: 'Termo de Cooperação ITEP', tipo: 'docx', tamanho: '890 KB', categoria: 'Parcerias', url: '#', dataPublicacao: '05/04/2024' },
-  { id: 5, nome: 'Parceria Estratégica UPE', tipo: 'pdf', tamanho: '2.3 MB', categoria: 'Parcerias', url: '#', dataPublicacao: '18/04/2024' },
-  { id: 6, nome: 'Acordo CESAR School', tipo: 'pdf', tamanho: '1.2 MB', categoria: 'Parcerias', url: '#', dataPublicacao: '12/05/2024' },
-  { id: 7, nome: 'Convênio Governo Federal - CNPq', tipo: 'pdf', tamanho: '3.1 MB', categoria: 'Parcerias', url: '#', dataPublicacao: '25/06/2024' },
-  { id: 8, nome: 'Protocolo de Intenções SENAI', tipo: 'docx', tamanho: '675 KB', categoria: 'Parcerias', url: '#', dataPublicacao: '14/07/2024' },
-  { id: 9, nome: 'Termo de Parceria EMBRAPII', tipo: 'pdf', tamanho: '1.9 MB', categoria: 'Parcerias', url: '#', dataPublicacao: '30/08/2024' },
-  { id: 10, nome: 'Acordo de Cooperação Internacional', tipo: 'pdf', tamanho: '2.7 MB', categoria: 'Parcerias', url: '#', dataPublicacao: '15/09/2024' },
-  { id: 11, nome: 'Convênio Startups Pernambuco', tipo: 'pdf', tamanho: '1.4 MB', categoria: 'Parcerias', url: '#', dataPublicacao: '22/10/2024' },
-];
+import { DocumentosParceriasPublicosList } from '../../../components/DocumentosParceriasPublicosList';
+import type { DocumentoParceriaPublicoItem } from '../../../components/DocumentosParceriasPublicosList';
+import { useState, useEffect, useCallback } from 'react';
+import { useSEO } from '../../../utils/useSEO.ts';
+import { parceriasService } from '../../../services/parceriasService';
+import { tagService, type TagPublica } from '../../../services/tagService.ts';
+import { handleApiError } from '../../../utils/errorHandler';
 
 export const Parcerias = () => {
-  const emptyStateIcon = (
-    <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
-  );
+  // SEO
+  useSEO({
+    title: 'Parcerias',
+    description: 'Conheça as parcerias estratégicas da Secretaria de Ciência, Tecnologia e Inovação de Pernambuco com instituições públicas e privadas.',
+    canonical: 'https://secti.pe.gov.br/secti/parcerias',
+    keywords: 'Parcerias, SECTI, Colaboração, Pernambuco',
+  });
+  const [documentos, setDocumentos] = useState<DocumentoParceriaPublicoItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [filtroTitulo, setFiltroTitulo] = useState('');
+  const [filtroAno, setFiltroAno] = useState<number | undefined>();
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroTagId, setFiltroTagId] = useState<number | undefined>();
+  const [tags, setTags] = useState<TagPublica[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
+
+  // Carregar tags no carregamento inicial
+  useEffect(() => {
+    const carregarTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await tagService.listarPublico({
+          pagina: 1,
+          itensPorPagina: 50,
+        });
+        const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
+        setTags(tagsOrdenadas);
+      } catch (err) {
+        console.error('Erro ao carregar tags:', err);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    carregarTags();
+  }, []);
+
+  const carregarParcerias = useCallback(async (pagina: number, titulo: string = '', ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Buscar parcerias públicas do endpoint
+      const response = await parceriasService.listarPublico({
+        titulo: titulo || undefined,
+        ano: ano,
+        dataPublicacao: dataPublicacao || undefined,
+        tagIds: tagIds,
+        ordenarPor: 'anopublicacao',
+        ordenarDescendente: true,
+        pagina: pagina,
+        itensPorPagina: 10,
+      });
+
+      // Converter resposta para formato DocumentoParceriaPublicoItem
+      const documentosFormatados: DocumentoParceriaPublicoItem[] = response.parcerias.map(doc => ({
+        id: doc.id,
+        nome: doc.titulo,
+        tipo: 'pdf' as const,
+        tamanho: 'Não disponível',
+        categoria: 'Parcerias',
+        url: doc.caminhoArquivo,
+        dataPublicacao: doc.dataPublicacao,
+        tags: doc.tags,
+      }));
+
+      setDocumentos(documentosFormatados);
+      setTotalPaginas(response.totalPaginas);
+    } catch (err) {
+      const mensagemErro = handleApiError(err);
+      setError(mensagemErro);
+      console.error('Erro ao carregar parcerias:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarParcerias(paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId ? [filtroTagId] : undefined);
+  }, [paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId, carregarParcerias]);
+
+  const handleMudarPagina = (novaPagina: number) => {
+    setPaginaAtual(novaPagina);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBuscar = (titulo: string, ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
+    setFiltroTitulo(titulo);
+    setFiltroAno(ano);
+    setFiltroDataPublicacao(dataPublicacao || '');
+    setFiltroTagId(tagIds && tagIds.length > 0 ? tagIds[0] : undefined);
+    setPaginaAtual(1);
+  };
+
+  const handleLimpar = () => {
+    setFiltroTitulo('');
+    setFiltroAno(undefined);
+    setFiltroDataPublicacao('');
+    setFiltroTagId(undefined);
+    setPaginaAtual(1);
+  };
 
   return (
     <PublicLayout>
@@ -33,7 +123,7 @@ export const Parcerias = () => {
       />
 
       {/* Content Section */}
-      <section className="py-12 bg-white    ">
+      <section className="py-12 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Introdução */}
           <div className="text-center mb-8">
@@ -44,15 +134,25 @@ export const Parcerias = () => {
             </p>
           </div>
 
-          <DocumentList
-            documents={documentosParceriasMock}
-            categories={['Parcerias']}
-            showCategoryFilter={false}
-            emptyStateIcon={emptyStateIcon}
-            emptyStateTitle="Nenhum documento de parceria encontrado"
-            emptyStateDescription="Tente ajustar os filtros de busca"
-            getCategoryColor={() => 'bg-[#195CE3] text-white'}
-          />
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+          <p className="text-red-700 font-medium">Erro ao carregar parcerias: {error}</p>
+        </div>
+      )}
+
+      {/* Documents List */}
+      <DocumentosParceriasPublicosList
+        documents={documentos}
+        tags={tags}
+        isLoading={isLoading}
+        isLoadingTags={isLoadingTags}
+        totalPaginas={totalPaginas}
+        paginaAtual={paginaAtual}
+        onMudarPagina={handleMudarPagina}
+        onFiltroChange={handleBuscar}
+        onLimpar={handleLimpar}
+      />
         </div>
       </section>
     </PublicLayout>

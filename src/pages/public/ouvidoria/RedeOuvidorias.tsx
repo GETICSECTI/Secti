@@ -1,7 +1,15 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
+import { useSEO } from '../../../utils/useSEO.ts';
 
 export const RedeOuvidorias = () => {
+  // SEO
+  useSEO({
+    title: 'Rede de Ouvidorias',
+    description: 'Conheça a rede de ouvidorias do Estado de Pernambuco e seus contatos.',
+    canonical: 'https://secti.pe.gov.br/ouvidoria/rede-ouvidorias',
+    keywords: 'Rede Ouvidorias, Contatos, Pernambuco',
+  });
   const ouvidorias = [
     {
       id: 1,

@@ -2,6 +2,7 @@ import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
 import { Accordion } from '../../../components/Accordion.tsx';
 import type { AccordionItem } from '../../../components/Accordion.tsx';
+import { useSEO } from '../../../utils/useSEO.ts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBuilding,
@@ -132,6 +133,13 @@ const secoesAccordion: AccordionItem[] = [
 ];
 
 export const InformacoesInstitucionais = () => {
+  // SEO
+  useSEO({
+    title: 'Informações Institucionais',
+    description: 'Informações institucionais da Secretaria de Ciência, Tecnologia e Inovação de Pernambuco, incluindo visão, missão, valores e estrutura organizacional.',
+    canonical: 'https://secti.pe.gov.br/transparencia/informacoes-institucionais',
+    keywords: 'Informações Institucionais, SECTI, Estrutura, Missão',
+  });
   return (
     <PublicLayout>
       <HeroSection

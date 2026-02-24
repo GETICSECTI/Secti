@@ -1,9 +1,17 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
 import { useState } from 'react';
+import { useSEO } from '../../../utils/useSEO.ts';
 import OrganogramaSecti2023 from "../../../assets/OrganogramaSECTI2023.jpg";
 
 export const Organograma = () => {
+  // SEO
+  useSEO({
+    title: 'Organograma',
+    description: 'Conheça a estrutura organizacional da Secretaria de Ciência, Tecnologia e Inovação de Pernambuco.',
+    canonical: 'https://secti.pe.gov.br/secti/organograma',
+    keywords: 'Organograma, SECTI, Estrutura, Pernambuco',
+  });
   const [imagemCarregada, setImagemCarregada] = useState(false);
   const [erro, setErro] = useState(false);
 

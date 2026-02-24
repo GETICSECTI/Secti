@@ -1,8 +1,17 @@
 import { Link } from 'react-router-dom';
 import { PublicLayout } from '../../layouts/PublicLayout';
+import { useSEO } from '../../utils/useSEO.ts';
 import ImagemErro404 from "../../assets/Erro404.png";
 
 export const Erro404 = () => {
+  // SEO
+  useSEO({
+    title: 'Página não encontrada',
+    description: 'A página que você procura não foi encontrada. Retorne à página inicial da SECTI Pernambuco.',
+    canonical: 'https://secti.pe.gov.br/erro404',
+    keywords: 'Erro 404, Página não encontrada',
+    ogType: 'website',
+  });
   return (
     <PublicLayout>
       <div className="min-h-[calc(100vh-200px)] bg-linear-to-b from-gray-50 to-white relative overflow-hidden">

@@ -1,35 +1,114 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
-import { DocumentList} from '../../../components/DocumentList.tsx';
-import type {DocumentItem} from "../../../components/DocumentList.tsx";
+import { DocumentosServidorPublicosList } from '../../../components/DocumentosServidorPublicosList';
+import type { DocumentoServidorPublicoItem } from '../../../components/DocumentosServidorPublicosList';
+import { useState, useEffect, useCallback } from 'react';
+import { useSEO } from '../../../utils/useSEO.ts';
+import { documentosServidorService } from '../../../services/documentosServidorService';
+import { tagService, type TagPublica } from '../../../services/tagService.ts';
+import { handleApiError } from '../../../utils/errorHandler';
 
-// Dados de exemplo - substituir por dados reais da API
-const documentosServidorMock: DocumentItem[] = [
-  { id: 1, nome: 'Manual do Servidor Público', tipo: 'pdf', tamanho: '3.2 MB', categoria: 'Documentos', url: '#', dataPublicacao: '15/01/2024' },
-  { id: 2, nome: 'Formulário de Avaliação de Desempenho 2024', tipo: 'docx', tamanho: '850 KB', categoria: 'Avaliação de Desempenho', url: '#', dataPublicacao: '10/02/2024' },
-  { id: 3, nome: 'Regulamento de Progressão Funcional', tipo: 'pdf', tamanho: '2.1 MB', categoria: 'Documentos', url: '#', dataPublicacao: '05/03/2024' },
-  { id: 4, nome: 'Critérios de Avaliação de Desempenho', tipo: 'pdf', tamanho: '1.5 MB', categoria: 'Avaliação de Desempenho', url: '#', dataPublicacao: '12/03/2024' },
-  { id: 5, nome: 'Código de Ética do Servidor', tipo: 'pdf', tamanho: '1.8 MB', categoria: 'Documentos', url: '#', dataPublicacao: '20/04/2024' },
-  { id: 6, nome: 'Relatório de Avaliação 2023', tipo: 'pdf', tamanho: '4.1 MB', categoria: 'Avaliação de Desempenho', url: '#', dataPublicacao: '25/05/2024' },
-  { id: 7, nome: 'Portaria de Capacitação', tipo: 'pdf', tamanho: '945 KB', categoria: 'Documentos', url: '#', dataPublicacao: '14/06/2024' },
-  { id: 8, nome: 'Orientações para Avaliação 2024', tipo: 'docx', tamanho: '1.2 MB', categoria: 'Avaliação de Desempenho', url: '#', dataPublicacao: '18/07/2024' },
-  { id: 9, nome: 'Manual de Direitos e Deveres', tipo: 'pdf', tamanho: '2.7 MB', categoria: 'Documentos', url: '#', dataPublicacao: '22/08/2024' },
-  { id: 10, nome: 'Cronograma de Avaliações 2024', tipo: 'pdf', tamanho: '678 KB', categoria: 'Avaliação de Desempenho', url: '#', dataPublicacao: '30/09/2024' },
-  { id: 11, nome: 'Regulamento Interno da SECTI', tipo: 'pdf', tamanho: '3.5 MB', categoria: 'Documentos', url: '#', dataPublicacao: '15/10/2024' },
-];
 
 export const Servidor = () => {
-  const categorias = ['Todas', 'Avaliação de Desempenho', 'Documentos'];
+  // SEO
+  useSEO({
+    title: 'Servidor',
+    description: 'Informações e documentos voltados aos servidores públicos da Secretaria de Ciência, Tecnologia e Inovação de Pernambuco.',
+    canonical: 'https://secti.pe.gov.br/secti/servidor',
+    keywords: 'Servidor Público, SECTI, Documentos, Pernambuco',
+  });
+  const [documentos, setDocumentos] = useState<DocumentoServidorPublicoItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [filtroTitulo, setFiltroTitulo] = useState('');
+  const [filtroAno, setFiltroAno] = useState<number | undefined>();
+  const [filtroDataPublicacao, setFiltroDataPublicacao] = useState<string>('');
+  const [filtroTagId, setFiltroTagId] = useState<number | undefined>();
+  const [tags, setTags] = useState<TagPublica[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
 
-  const getCategoryColor = (categoria: string) => {
-    switch (categoria) {
-      case 'Avaliação de Desempenho':
-        return 'bg-[#195CE3] text-white';
-      case 'Documentos':
-        return 'bg-[#0C2856] text-white';
-      default:
-        return 'bg-gray-500 text-white';
+  // Carregar tags no carregamento inicial
+  useEffect(() => {
+    const carregarTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await tagService.listarPublico({
+          pagina: 1,
+          itensPorPagina: 50,
+        });
+        const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
+        setTags(tagsOrdenadas);
+      } catch (err) {
+        console.error('Erro ao carregar tags:', err);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    carregarTags();
+  }, []);
+  const carregarDocumentos = useCallback(async (pagina: number, titulo: string = '', ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Buscar documentos do servidor públicos do endpoint
+      const response = await documentosServidorService.listarPublico({
+        titulo: titulo || undefined,
+        ano: ano,
+        dataPublicacao: dataPublicacao || undefined,
+        tagIds: tagIds,
+        pagina: pagina,
+        itensPorPagina: 10,
+      });
+
+      // Converter resposta para formato DocumentoServidorPublicoItem
+      const documentosFormatados: DocumentoServidorPublicoItem[] = response.documentos.map(doc => ({
+        id: doc.id,
+        nome: doc.titulo,
+        tipo: 'pdf' as const,
+        tamanho: 'Não disponível',
+        categoria: 'Documentos',
+        url: doc.caminhoArquivo,
+        dataPublicacao: doc.dataPublicacao,
+        tags: doc.tags,
+      }));
+
+      setDocumentos(documentosFormatados);
+      setTotalPaginas(response.totalPaginas);
+    } catch (err) {
+      const mensagemErro = handleApiError(err);
+      setError(mensagemErro);
+      console.error('Erro ao carregar documentos do servidor:', err);
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    carregarDocumentos(paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId ? [filtroTagId] : undefined);
+  }, [paginaAtual, filtroTitulo, filtroAno, filtroDataPublicacao, filtroTagId, carregarDocumentos]);
+
+  const handleMudarPagina = (novaPagina: number) => {
+    setPaginaAtual(novaPagina);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleFiltroChange = (titulo: string, ano?: number, dataPublicacao?: string, tagIds?: number[]) => {
+    setFiltroTitulo(titulo);
+    setFiltroAno(ano);
+    setFiltroDataPublicacao(dataPublicacao || '');
+    setFiltroTagId(tagIds && tagIds.length > 0 ? tagIds[0] : undefined);
+    setPaginaAtual(1);
+  };
+
+  const handleLimpar = () => {
+    setFiltroTitulo('');
+    setFiltroAno(undefined);
+    setFiltroDataPublicacao('');
+    setFiltroTagId(undefined);
+    setPaginaAtual(1);
   };
 
   return (
@@ -51,13 +130,27 @@ export const Servidor = () => {
               </p>
             </div>
 
-            <DocumentList
-              documents={documentosServidorMock}
-              categories={categorias}
-              showCategoryFilter={true}
-              getCategoryColor={getCategoryColor}
-            />
-          </div>
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+                <p className="text-red-700 font-medium">Erro ao carregar documentos: {error}</p>
+              </div>
+            )}
+
+        {!error && (
+          <DocumentosServidorPublicosList
+            documents={documentos}
+            tags={tags}
+            isLoading={isLoading}
+            isLoadingTags={isLoadingTags}
+            totalPaginas={totalPaginas}
+            paginaAtual={paginaAtual}
+            onMudarPagina={handleMudarPagina}
+            onFiltroChange={handleFiltroChange}
+            onLimpar={handleLimpar}
+          />
+        )}
+        </div>
         </div>
       </section>
     </PublicLayout>

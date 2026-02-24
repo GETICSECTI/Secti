@@ -20,7 +20,7 @@ export const Login = () => {
 
     try {
       await login({ email, password });
-      navigate('/dashboard');
+      navigate('/admin/dashboard');
     } catch (err) {
       const errorMessage = err instanceof Error
         ? err.message

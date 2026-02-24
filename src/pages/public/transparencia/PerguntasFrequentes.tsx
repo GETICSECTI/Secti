@@ -2,6 +2,7 @@ import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
 import { Accordion } from '../../../components/Accordion.tsx';
 import type { AccordionItem } from '../../../components/Accordion.tsx';
+import { useSEO } from '../../../utils/useSEO.ts';
 
 // Dados de perguntas frequentes
 const perguntasFrequentes: AccordionItem[] = [
@@ -86,6 +87,13 @@ O processo seletivo do PROUNI-PE tem uma única etapa de inscrição. A inscriç
 ];
 
 export const PerguntasFrequentes = () => {
+  // SEO
+  useSEO({
+    title: 'Perguntas Frequentes',
+    description: 'Perguntas frequentes e respostas sobre a Secretaria de Ciência, Tecnologia e Inovação de Pernambuco.',
+    canonical: 'https://secti.pe.gov.br/transparencia/perguntas-frequentes',
+    keywords: 'FAQ, Perguntas Frequentes, SECTI, Dúvidas',
+  });
   return (
     <PublicLayout>
       <HeroSection

@@ -1,7 +1,15 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
+import { useSEO } from '../../../utils/useSEO.ts';
 
 export const Certificacoes = () => {
+  // SEO
+  useSEO({
+    title: 'Certificações',
+    description: 'Conheça as certificações e reconhecimentos de excelência da Secretaria de Ciência, Tecnologia e Inovação de Pernambuco.',
+    canonical: 'https://secti.pe.gov.br/secti/certificacoes',
+    keywords: 'Certificações, Qualidade, SECTI, Pernambuco',
+  });
   return (
     <PublicLayout>
       <HeroSection

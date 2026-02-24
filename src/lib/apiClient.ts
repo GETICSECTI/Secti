@@ -5,17 +5,31 @@ import { API_CONFIG } from '../config/api';
 export const apiClient = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
-  withCredentials: API_CONFIG.withCredentials, // Important for HttpOnly cookies
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor
+// Request interceptor to add Authorization header
 apiClient.interceptors.request.use(
   (config) => {
-    // You can add additional headers here if needed
-    // For HttpOnly cookies, the cookie is automatically sent by the browser
+    const authDataStr = localStorage.getItem('auth_data');
+    if (authDataStr) {
+      try {
+        const authData = JSON.parse(authDataStr);
+        if (authData.token) {
+          config.headers.Authorization = `Bearer ${authData.token}`;
+        }
+      } catch (error) {
+        console.error('Error parsing auth data:', error);
+      }
+    }
+
+    // Se for FormData, remover Content-Type para deixar o navegador definir automaticamente
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => {
@@ -29,18 +43,12 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
-    // Handle 401 Unauthorized errors - redirect to login
+    // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {
-      // Clear any stored user data
-      localStorage.removeItem('auth_user');
-
-      // Only redirect if not already on login page
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
+      // Clear auth data from localStorage
+      localStorage.removeItem('auth_data');
     }
 
     return Promise.reject(error);
   }
 );
-

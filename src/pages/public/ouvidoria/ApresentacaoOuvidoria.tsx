@@ -1,7 +1,15 @@
 import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
+import { useSEO } from '../../../utils/useSEO.ts';
 
 export const ApresentacaoOuvidoria = () => {
+  // SEO
+  useSEO({
+    title: 'Apresentação da Ouvidoria',
+    description: 'Conheça a Ouvidoria da Secretaria de Ciência, Tecnologia e Inovação de Pernambuco, seu papel e canais de comunicação.',
+    canonical: 'https://secti.pe.gov.br/ouvidoria/apresentacao',
+    keywords: 'Ouvidoria, SECTI, Comunicação, Denúncia',
+  });
   return (
     <PublicLayout>
       <HeroSection
