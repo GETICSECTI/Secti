@@ -103,6 +103,7 @@ export const Login = () => {
                       required
                       className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent transition-all"
                       placeholder="seu@email.com"
+                      autoComplete="email"
                   />
                 </div>
               </div>
@@ -125,6 +126,7 @@ export const Login = () => {
                       required
                       className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent transition-all"
                       placeholder="••••••••"
+                      autoComplete={showPassword ? "text" : "current-password"}
                   />
                   <button
                       type="button"
