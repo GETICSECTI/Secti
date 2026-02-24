@@ -42,8 +42,8 @@ export const LinkModal: FC<LinkModalProps> = ({ isOpen, initialUrl = '', initial
             <input id="link-text" value={text} onChange={(e) => setText(e.target.value)} type="text" placeholder="Texto visível" className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3]" />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => { onClose(); }} className="px-4 py-2 border rounded-md text-sm">Cancelar</button>
-            <button type="button" onClick={() => { if (url && url.trim()) onConfirm(url.trim(), text.trim()); }} className="px-4 py-2 bg-[#0C2856] text-white rounded-md text-sm">Inserir</button>
+            <button type="button" onClick={() => { onClose(); }} className="cursor-pointer px-4 py-2 border rounded-md text-sm">Cancelar</button>
+            <button type="button" onClick={() => { if (url && url.trim()) onConfirm(url.trim(), text.trim()); }} className="cursor-pointer px-4 py-2 bg-[#0C2856] text-white rounded-md text-sm">Inserir</button>
           </div>
         </div>
       </div>
