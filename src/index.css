@@ -243,3 +243,29 @@ body {
     color: #195CE3;
     font-weight: 500;
 }
+
+/* Editor-specific styles */
+.editor-content ul {
+  list-style-type: disc;
+  margin-left: 1.25rem; /* show bullets clearly */
+  padding-left: 1rem;
+}
+
+.editor-content ul li {
+  margin-bottom: 0.25rem;
+}
+
+h3 {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+ul {
+    list-style-type: disc;
+    margin-left:1.25rem;
+    padding-left: 1rem;
+}
+
+ul li::marker {
+    color: #195CE3;
+}

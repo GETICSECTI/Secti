@@ -652,6 +652,7 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
           {tipoConteudo === 'simples' && (
             <div className="flex flex-wrap gap-2 mb-2">
               <button type="button" onClick={() => applyFormat('formatBlock', 'h3')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Título</button>
+              <button type="button" onClick={() => applyFormat('formatBlock', 'p')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Parágrafo</button>
               <button type="button" onClick={() => applyFormat('bold')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Negrito</button>
               <button type="button" onClick={() => applyFormat('italic')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Itálico</button>
               <button type="button" onClick={() => applyFormat('insertUnorderedList')} className="cursor-pointer px-2 py-1 bg-gray-100 rounded-md text-sm">Lista</button>
@@ -671,7 +672,7 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
               onInput={() => {
                 if (editorRef.current) setFormData(prev => ({ ...prev, conteudo: editorRef.current!.innerHTML }));
               }}
-              className="min-h-60 block w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent bg-white"
+              className="editor-content min-h-60 block w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent bg-white"
             />
           ) : (
             <textarea
