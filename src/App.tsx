@@ -71,8 +71,8 @@ import { EditarProjeto } from './pages/private/projetos/EditarProjeto.tsx';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
@@ -439,8 +439,8 @@ function App() {
           {/* 404 Not Found */}
           <Route path="*" element={<Erro404 />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
