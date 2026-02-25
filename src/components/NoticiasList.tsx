@@ -70,7 +70,7 @@ export const NoticiasList = ({
       {/* Filtros */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Buscar Notícias</h3>
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
+        <div className="flex flex-col sm:flex-row gap-4 md:items-end">
           <div className="flex-1">
             <label htmlFor="busca" className="block text-sm font-medium text-gray-700 mb-2">
               Título da Notícia
