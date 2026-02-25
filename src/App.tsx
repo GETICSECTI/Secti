@@ -3,6 +3,7 @@ import {AuthProvider} from "./contexts";
 import { PrivateRoute } from './guards/PrivateRoute';
 import { PrivateRouteWithMenuAccess } from './guards/PrivateRouteWithMenuAccess';
 import { PublicRoute } from './guards/PublicRoute';
+import CookieConsentBanner from './components/CookieConsentBanner';
 
 // Public Pages
 import { Home } from './pages/public/Home.tsx';
@@ -24,6 +25,7 @@ import { Parcerias } from './pages/public/secti/Parcerias.tsx';
 import { Legislacao } from './pages/public/secti/Legislacao.tsx';
 import { Relatorios } from './pages/public/secti/Relatorios.tsx';
 import { Projetos } from './pages/public/Projetos.tsx';
+import { PoliticaPrivacidade } from './pages/public/PoliticaPrivacidade.tsx';
 
 // Private Pages
 import { DashboardPage } from './pages/private/DashboardPage';
@@ -73,6 +75,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <CookieConsentBanner />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
@@ -97,6 +100,7 @@ function App() {
           <Route path="/transparencia" element={<Transparencia/>}/>
           <Route path="/transparencia/perguntas-frequentes" element={<PerguntasFrequentes/>}/>
           <Route path="/transparencia/informacoes-institucionais" element={<InformacoesInstitucionais/>}/>
+          <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade/>} />
           <Route
             path="/login"
             element={
