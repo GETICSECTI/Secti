@@ -138,10 +138,10 @@ export const NoticiasList = ({
           <>
             {noticias.map(noticia => (
               <article key={noticia.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="md:flex">
+                <div className="md:flex md:items-stretch">
                   {/* Imagem */}
-                  <div className="md:w-1/3 max-h-48 flex items-center justify-center bg-gray-100">
-                    <div className="w-full object-cover flex items-center justify-center overflow-hidden">
+                  <div className="md:w-1/3 flex items-center justify-center bg-gray-100 self-stretch">
+                    <div className="w-full h-full overflow-hidden">
                       <img
                         src={noticia.imagem}
                         alt={noticia.titulo}
@@ -151,7 +151,7 @@ export const NoticiasList = ({
                   </div>
 
                   {/* Conteúdo */}
-                  <div className="md:w-2/3 p-6">
+                  <div className="md:w-2/3 p-6 h-full">
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       {noticia.tags && noticia.tags.length > 0 && (
                         noticia.tags.map((tag) => (
