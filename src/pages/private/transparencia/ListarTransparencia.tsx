@@ -8,7 +8,7 @@ export const ListarTransparencia = () => {
   const [transparenciasTotal, setTransparenciasTotal] = useState<TransparenciaSubmenu[]>([]);
   const [transparencias, setTransparencias] = useState<TransparenciaSubmenu[]>([]);
   const [busca, setBusca] = useState<string>('');
-  const [filtroStatus, setFiltroStatus] = useState<string>('Todos');
+  const [filtroStatus, setFiltroStatus] = useState<string>('Ativos');
   const [isLoading, setIsLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
