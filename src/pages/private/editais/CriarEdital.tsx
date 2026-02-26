@@ -250,23 +250,6 @@ export const CriarEdital = () => {
             <p className="text-xs text-gray-500 mt-1">Selecione a data de publicação do edital</p>
           </div>
 
-          {/* Caminho (opcional) */}
-          <div>
-            <label htmlFor="caminho" className="block text-sm font-medium text-gray-700 mb-2">
-              Caminho/Pasta (opcional)
-            </label>
-            <input
-              type="text"
-              id="caminho"
-              value={formData.caminho}
-              onChange={(e) => setFormData(prev => ({ ...prev, caminho: e.target.value }))}
-              placeholder="Ex: editais/licitacoes"
-              maxLength={500}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#195CE3] focus:border-transparent outline-none transition-colors"
-            />
-            <p className="text-xs text-gray-500 mt-1">Indica a pasta onde o arquivo será apresentado</p>
-          </div>
-
           {/* Upload de Arquivo */}
           <div>
             <label htmlFor="arquivo-input" className="block text-sm font-medium text-gray-700 mb-2">
