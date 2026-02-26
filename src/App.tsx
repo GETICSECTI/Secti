@@ -48,6 +48,7 @@ import { ListarParcerias } from './pages/private/parcerias/ListarParcerias.tsx';
 import { CriarParcerias } from './pages/private/parcerias/CriarParcerias.tsx';
 import { ListarTransparencia } from './pages/private/transparencia/ListarTransparencia.tsx';
 import { CriarTransparencia } from './pages/private/transparencia/CriarTransparencia.tsx';
+import { EditarTransparencia } from './pages/private/transparencia/EditarTransparencia.tsx';
 import { ListarProcessos } from './pages/private/processos/ListarProcessos.tsx';
 import { CriarProcessos } from './pages/private/processos/CriarProcessos.tsx';
 import { ListarRelatorios } from './pages/private/relatorios/ListarRelatorios.tsx';
@@ -324,6 +325,14 @@ function App() {
             element={
               <PrivateRouteWithMenuAccess requiredMenu="Transparencia">
                 <CriarTransparencia />
+              </PrivateRouteWithMenuAccess>
+            }
+          />
+          <Route
+            path="/admin/transparencia/editar/:id"
+            element={
+              <PrivateRouteWithMenuAccess requiredMenu="Transparencia">
+                <EditarTransparencia />
               </PrivateRouteWithMenuAccess>
             }
           />
