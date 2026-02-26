@@ -261,7 +261,7 @@ export const PrivateLayout = ({ children }: PrivateLayoutProps) => {
               key={item.path}
               to={item.path}
               onClick={() => setSidebarOpen(false)}
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 flex-shrink-0 ${
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 shrink-0 ${
                 isActive(item.path)
                   ? 'bg-[#195CE3] text-white shadow-lg'
                   : 'text-gray-300 hover:bg-[#195CE3]/50 hover:text-white'
