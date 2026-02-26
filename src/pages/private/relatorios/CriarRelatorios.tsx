@@ -258,23 +258,6 @@ export const CriarRelatorios = () => {
             <p className="text-xs text-gray-500 mt-1">Selecione a data de publicação do relatório</p>
           </div>
 
-          {/* Caminho (Opcional) */}
-          <div>
-            <label htmlFor="caminho" className="block text-sm font-medium text-gray-700 mb-2">
-              Caminho
-            </label>
-            <input
-              type="text"
-              id="caminho"
-              value={formData.caminho}
-              onChange={(e) => setFormData(prev => ({ ...prev, caminho: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0C2856] focus:border-transparent"
-              placeholder="Digite o caminho (opcional)"
-              maxLength={500}
-            />
-            <p className="text-xs text-gray-500 mt-1">Opcional, máximo 500 caracteres</p>
-          </div>
-
           {/* Upload de Arquivo */}
           <div>
             <label htmlFor="arquivo-input" className="block text-sm font-medium text-gray-700 mb-2">

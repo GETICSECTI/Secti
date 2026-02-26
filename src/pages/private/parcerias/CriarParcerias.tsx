@@ -282,24 +282,6 @@ export const CriarParcerias = () => {
             <p className="text-xs text-gray-500 mt-1">Data entre 1900 e 3000</p>
           </div>
 
-          {/* Caminho (opcional) */}
-          <div>
-            <label htmlFor="caminho" className="block text-sm font-medium text-gray-700 mb-2">
-              Caminho (Opcional)
-            </label>
-            <input
-              type="text"
-              id="caminho"
-              value={formData.caminho}
-              onChange={(e) => setFormData({ ...formData, caminho: e.target.value })}
-              placeholder="Ex: /documentos/parcerias"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#195CE3] focus:border-transparent"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Pasta/caminho onde o arquivo está sendo apresentado (opcional)
-            </p>
-          </div>
-
           {/* Upload de Arquivo */}
           <div>
             <label htmlFor="arquivo-input" className="block text-sm font-medium text-gray-700 mb-2">
