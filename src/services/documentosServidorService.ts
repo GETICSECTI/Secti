@@ -292,11 +292,7 @@ export const documentosServidorService = {
     }
     if (filtros?.tagId !== undefined) {
       params.append('TagId', filtros.tagId.toString());
-    }
-    if (filtros?.caminho) {
-      params.append('Caminho', filtros.caminho);
-    }
-    if (filtros?.categoria) {
+    } else if (filtros?.categoria) {
       params.append('Categoria', filtros.categoria);
     }
     if (filtros?.ano !== undefined) {

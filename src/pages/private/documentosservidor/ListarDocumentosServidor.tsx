@@ -74,10 +74,10 @@ export const ListarDocumentosServidor = () => {
       return {
         id: filtroId ? Number(filtroId) : undefined,
         titulo: busca.trim() || undefined,
-        categoria: categoriaFiltro || undefined,
+        // prefer tagId
+        tagId: filtroTagId ? Number(filtroTagId) : categoriaFiltro || undefined,
         ano: filtroAno ? Number(filtroAno) : undefined,
         pastaId: filtroPastaId ? Number(filtroPastaId) : undefined,
-        tagId: filtroTagId ? Number(filtroTagId) : undefined,
         dataPublicacao: filtroDataPublicacao || undefined,
         dataCriacao: filtroDataCriacao || undefined,
         dataAtualizacao: filtroDataAtualizacao || undefined,

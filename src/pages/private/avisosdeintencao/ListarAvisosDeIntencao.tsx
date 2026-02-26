@@ -82,9 +82,9 @@ export const ListarAvisosDeIntencao = () => {
       return {
         id: filtroId ? Number(filtroId) : undefined,
         titulo: busca.trim() || undefined,
-        categoria: categoriaFiltro || undefined,
+        // prefer tagId
+        tagId: filtroTagId ? Number(filtroTagId) : categoriaFiltro || undefined,
         pastaId: filtroPastaId ? Number(filtroPastaId) : undefined,
-        tagId: filtroTagId ? Number(filtroTagId) : undefined,
         nomeArquivo: filtroNomeArquivo || undefined,
         dataPublicacao: filtroDataPublicacao || undefined,
         dataCriacao: filtroDataCriacao || undefined,

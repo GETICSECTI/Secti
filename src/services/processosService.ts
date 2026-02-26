@@ -74,6 +74,8 @@ export interface ProcessoListResponse {
 export interface ProcessoListFilters {
   caminho?: string;
   categoria?: string;
+  // numeric tagId to filter by tag
+  tagId?: number;
   id?: number;
   titulo?: string;
   ano?: number;
@@ -264,7 +266,10 @@ export const processosService = {
     if (filtros?.caminho) {
       params.append('Caminho', filtros.caminho);
     }
-    if (filtros?.categoria) {
+    // prefer TagId if provided; fallback to Categoria
+    if (filtros?.tagId !== undefined) {
+      params.append('TagId', filtros.tagId.toString());
+    } else if (filtros?.categoria) {
       params.append('Categoria', filtros.categoria);
     }
     if (filtros?.ano !== undefined) {

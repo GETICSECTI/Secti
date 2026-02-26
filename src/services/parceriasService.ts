@@ -110,6 +110,8 @@ export interface EditarParceriaRequest {
 export interface ParceriaListFilters {
   caminho?: string;
   categoria?: string;
+  // numeric tagId preferred
+  tagId?: number;
   id?: number;
   titulo?: string;
   ano?: number;
@@ -291,7 +293,10 @@ export const parceriasService = {
     if (filtros?.caminho) {
       params.append('Caminho', filtros.caminho);
     }
-    if (filtros?.categoria) {
+    // prefer TagId when provided, fallback to Categoria
+    if (filtros?.tagId !== undefined) {
+      params.append('TagId', filtros.tagId.toString());
+    } else if (filtros?.categoria) {
       params.append('Categoria', filtros.categoria);
     }
     if (filtros?.ano !== undefined) {

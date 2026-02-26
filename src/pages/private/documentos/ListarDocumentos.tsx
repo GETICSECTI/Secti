@@ -81,7 +81,8 @@ export const ListarDocumentos = () => {
       return {
         id: filtroId ? Number(filtroId) : undefined,
         ano: filtroAno ? Number(filtroAno) : undefined,
-        categoria: categoriaFiltro || undefined,
+        // Send selected category as tagId (backend expects TagId query parameter)
+        tagId: categoriaFiltro || undefined,
         titulo: busca.trim() || undefined,
         dataPublicacao: filtroDataPublicacao || undefined,
         dataCriacao: filtroDataCriacao || undefined,
@@ -96,9 +97,15 @@ export const ListarDocumentos = () => {
       } as Partial<DocumentoListFilters>;
     }
     if (appliedFiltros) {
+      // For backward compatibility, prefer appliedFiltros.tagId if present; otherwise map categoria -> tagId
+      const af = appliedFiltros as unknown as Record<string, unknown>;
+      const tagIdFromAf = af.tagId as number | undefined;
+      const categoriaFromAf = af.categoria as string | number | undefined;
+      const mappedTagId = tagIdFromAf ?? (categoriaFromAf ? Number(String(categoriaFromAf)) : undefined);
       return {
         ano: appliedFiltros.ano,
-        categoria: appliedFiltros.categoria,
+        // prefer tagId if present
+        tagId: mappedTagId,
         titulo: appliedFiltros.titulo,
       } as Partial<DocumentoListFilters>;
     }

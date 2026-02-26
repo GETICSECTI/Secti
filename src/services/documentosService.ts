@@ -116,6 +116,8 @@ export interface DocumentoListFilters {
   publico?: boolean;
   ativo?: boolean;
   categoria?: string;
+  // Add tagId for server filter (backend expects TagId)
+  tagId?: number;
   usuarioCriacaoId?: number;
   usuarioAtualizacaoId?: number;
   ano?: number;
@@ -275,7 +277,10 @@ export const documentosService = {
     if (filtros?.ativo !== undefined) {
       params.append('ativo', filtros.ativo.toString());
     }
-    if (filtros?.categoria) {
+    // Prefer explicit tagId (backend expects TagId). Keep categoria for backward compatibility if present as string.
+    if (filtros?.tagId !== undefined) {
+      params.append('TagId', filtros.tagId.toString());
+    } else if (filtros?.categoria) {
       params.append('categoria', filtros.categoria);
     }
     if (filtros?.usuarioCriacaoId !== undefined) {

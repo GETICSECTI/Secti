@@ -71,7 +71,10 @@ export interface RelatorioListResponse {
 
 export interface RelatorioListFilters {
   caminho?: string;
+  // keep categoria (string) for backward compatibility
   categoria?: string;
+  // prefer numeric tagId when filtering by tag
+  tagId?: number;
   id?: number;
   titulo?: string;
   ano?: number;
@@ -268,7 +271,10 @@ export const relatoriosService = {
     if (filtros?.caminho) {
       params.append('Caminho', filtros.caminho);
     }
-    if (filtros?.categoria) {
+    // prefer TagId when provided; fallback to Categoria for compatibility
+    if (filtros?.tagId !== undefined) {
+      params.append('TagId', filtros.tagId.toString());
+    } else if (filtros?.categoria) {
       params.append('Categoria', filtros.categoria);
     }
     if (filtros?.ano !== undefined) {

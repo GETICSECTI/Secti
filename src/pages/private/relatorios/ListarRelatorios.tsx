@@ -83,7 +83,8 @@ export const ListarRelatorios = () => {
         id: filtroId ? Number(filtroId) : undefined,
         titulo: busca.trim() || undefined,
         caminho: filtroCaminho || undefined,
-        categoria: categoriaFiltro || undefined,
+        // prefer tagId (numeric) when category selected
+        tagId: categoriaFiltro || undefined,
         tipo: filtroTipo && filtroTipo !== 'Todos' ? filtroTipo : undefined,
         pastaId: filtroPastaId ? Number(filtroPastaId) : undefined,
         ano: filtroAno ? Number(filtroAno) : undefined,
@@ -96,7 +97,7 @@ export const ListarRelatorios = () => {
         ordenarPor: ordenarPor,
         ordenarDescendente: ordenarDescendente,
         itensPorPagina: itemsPerPage,
-      } as Partial<RelatorioListFilters & { tipo?: string }>;
+      } as Partial<RelatorioListFilters & { tipo?: string } & { tagId?: number }>;
     }
     if (appliedFiltros) return appliedFiltros;
     return {} as Partial<RelatorioListFilters>;

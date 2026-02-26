@@ -265,14 +265,14 @@ export const avisosIntencaoContratarService = {
     if (filtros?.caminho) {
       params.append('Caminho', filtros.caminho);
     }
-    if (filtros?.categoria) {
+    // prefer TagId when provided; fallback to Categoria
+    if (filtros?.tagId !== undefined) {
+      params.append('TagId', filtros.tagId.toString());
+    } else if (filtros?.categoria) {
       params.append('Categoria', filtros.categoria);
     }
     if (filtros?.ano !== undefined) {
       params.append('Ano', filtros.ano.toString());
-    }
-    if (filtros?.tagId !== undefined) {
-      params.append('TagId', filtros.tagId.toString());
     }
     if (filtros?.nomeArquivo) {
       params.append('NomeArquivo', filtros.nomeArquivo);

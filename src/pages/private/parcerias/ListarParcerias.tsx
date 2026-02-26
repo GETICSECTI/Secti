@@ -78,7 +78,8 @@ export const ListarParcerias = () => {
       return {
         id: filtroId ? Number(filtroId) : undefined,
         titulo: busca.trim() || undefined,
-        categoria: categoriaFiltro || undefined,
+        // prefer tagId
+        tagId: categoriaFiltro || undefined,
         caminho: filtroCaminho || undefined,
         ano: filtroAno ? Number(filtroAno) : undefined,
         dataPublicacao: filtroDataPublicacao || undefined,

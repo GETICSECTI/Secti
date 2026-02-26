@@ -79,7 +79,8 @@ export const ListarEdital = () => {
       return {
         id: filtroId ? Number(filtroId) : undefined,
         titulo: busca.trim() || undefined,
-        categoria: filtroCategoria ? Number(filtroCategoria) : undefined,
+        // prefer tagId
+        tagId: filtroCategoria ? Number(filtroCategoria) : undefined,
         caminho: filtroCaminho || undefined,
         ano: filtroAno ? Number(filtroAno) : undefined,
         pastaId: filtroPastaId ? Number(filtroPastaId) : undefined,
