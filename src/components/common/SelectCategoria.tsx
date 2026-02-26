@@ -25,8 +25,9 @@ export const SelectCategoria = ({
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await tagService.listar({ apenasAtivas: true });
-        setTags(response.itens);
+        const response = await tagService.listarPublico({ nome: undefined, pagina: 1, itensPorPagina: 1000 });
+        const mapped = (response.tags || []).map(t => ({ id: t.id, nome: t.nome, ativo: true, dataCriacao: '' }));
+        setTags(mapped);
       } catch (err) {
         console.error('Erro ao carregar tags:', err);
         setError('Erro ao carregar categorias');

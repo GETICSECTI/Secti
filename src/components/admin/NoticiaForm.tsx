@@ -98,12 +98,9 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
       try {
         setIsLoadingTags(true);
         setErroCarregandoTags(null);
-        const response = await tagService.listar({
-          apenasAtivas: true,
-          pagina: 1,
-          itensPorPagina: 1000,
-        });
-        const tagsOrdenadas = [...response.itens].sort((a, b) => a.nome.localeCompare(b.nome));
+        const response = await tagService.listarPublico({ nome: undefined, pagina: 1, itensPorPagina: 1000 });
+        const mapped = (response.tags || []).map(t => ({ id: t.id, nome: t.nome, ativo: true, dataCriacao: '' }));
+        const tagsOrdenadas = [...mapped].sort((a, b) => a.nome.localeCompare(b.nome));
         setTags(tagsOrdenadas);
       } catch (error) {
         const mensagem = handleApiError(error);

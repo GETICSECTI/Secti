@@ -78,11 +78,12 @@ export const ListarRelatorios = () => {
 
   const getCurrentFilters = () => {
     if (hasAnyFilterApplied()) {
+      const categoriaFiltro = filtroCategoria ? Number(filtroCategoria) : undefined;
       return {
         id: filtroId ? Number(filtroId) : undefined,
         titulo: busca.trim() || undefined,
         caminho: filtroCaminho || undefined,
-        categoria: filtroCategoria || undefined,
+        categoria: categoriaFiltro || undefined,
         tipo: filtroTipo && filtroTipo !== 'Todos' ? filtroTipo : undefined,
         pastaId: filtroPastaId ? Number(filtroPastaId) : undefined,
         ano: filtroAno ? Number(filtroAno) : undefined,
@@ -168,12 +169,13 @@ export const ListarRelatorios = () => {
     setIsLoadingTags(true);
     setErroTags(null);
     try {
-      const response = await tagService.listar({
-        apenasAtivas: true,
+      const response = await tagService.listarPublico({
+        nome: undefined,
         pagina: 1,
         itensPorPagina: 1000,
       });
-      const tagsOrdenadas = [...response.itens].sort((a, b) => a.nome.localeCompare(b.nome));
+      const mapped = (response.tags || []).map(t => ({ id: t.id, nome: t.nome, ativo: true, dataCriacao: '' }));
+      const tagsOrdenadas = [...mapped].sort((a, b) => a.nome.localeCompare(b.nome));
       setTags(tagsOrdenadas);
     } catch (error) {
       const mensagemErro = handleApiError(error);
@@ -302,7 +304,7 @@ export const ListarRelatorios = () => {
               >
                 <option value="">Todas as categorias</option>
                 {tags.map((tag) => (
-                  <option key={tag.id} value={tag.nome}>
+                  <option key={tag.id} value={String(tag.id)}>
                     {tag.nome}
                   </option>
                 ))}

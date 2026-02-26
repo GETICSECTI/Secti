@@ -24,15 +24,21 @@ export const TagSelector = ({
       try {
         setLoading(true);
         setError(null);
-        const response = await tagService.listar({
-          apenasAtivas: true,
+        const response = await tagService.listarPublico({
+          nome: undefined,
           pagina: 1,
           itensPorPagina: 1000,
         });
-        const tagsOrdenadas = [...response.itens].sort((a, b) =>
+        const mapped = (response.tags || []).map((t) => ({
+          id: t.id,
+          nome: t.nome,
+          ativo: true,
+          dataCriacao: '',
+        }));
+        const ordenadas = [...mapped].sort((a, b) =>
           a.nome.localeCompare(b.nome)
         );
-        setTags(tagsOrdenadas);
+        setTags(ordenadas);
       } catch (err) {
         const mensagem = handleApiError(err);
         setError(mensagem);

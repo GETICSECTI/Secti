@@ -77,10 +77,11 @@ export const ListarDocumentos = () => {
   // Retorna os filtros atuais para passar a carregarDocumentos: prefere valores da UI quando presentes; caso contrário usa appliedFiltros
   const getCurrentFilters = () => {
     if (hasAnyFilterApplied()) {
+      const categoriaFiltro = filtroCategoria ? Number(filtroCategoria) : undefined;
       return {
         id: filtroId ? Number(filtroId) : undefined,
         ano: filtroAno ? Number(filtroAno) : undefined,
-        categoria: filtroCategoria || undefined,
+        categoria: categoriaFiltro || undefined,
         titulo: busca.trim() || undefined,
         dataPublicacao: filtroDataPublicacao || undefined,
         dataCriacao: filtroDataCriacao || undefined,
@@ -148,12 +149,15 @@ export const ListarDocumentos = () => {
     setIsLoadingTags(true);
     setErroTags(null);
     try {
-      const response = await tagService.listar({
-        apenasAtivas: true,
+      // use public tags endpoint to ensure consistent public tag list
+      const response = await tagService.listarPublico({
+        nome: undefined,
         pagina: 1,
         itensPorPagina: 1000,
       });
-      const tagsOrdenadas = [...response.itens].sort((a, b) => a.nome.localeCompare(b.nome));
+      // Map public tag shape to local Tag type
+      const mapped = (response.tags || []).map(t => ({ id: t.id, nome: t.nome, ativo: true, dataCriacao: '' }));
+      const tagsOrdenadas = [...mapped].sort((a, b) => a.nome.localeCompare(b.nome));
       setTags(tagsOrdenadas);
     } catch (error) {
       const mensagemErro = handleApiError(error);
@@ -408,7 +412,7 @@ export const ListarDocumentos = () => {
               >
                 <option value="">Todas as categorias</option>
                 {tags.map((tag) => (
-                  <option key={tag.id} value={tag.nome}>
+                  <option key={tag.id} value={String(tag.id)}>
                     {tag.nome}
                   </option>
                 ))}

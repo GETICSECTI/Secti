@@ -78,10 +78,11 @@ export const ListarAvisosDeIntencao = () => {
 
   const getCurrentFilters = () => {
     if (hasAnyFilterApplied()) {
+      const categoriaFiltro = filtroCategoria ? Number(filtroCategoria) : undefined;
       return {
         id: filtroId ? Number(filtroId) : undefined,
         titulo: busca.trim() || undefined,
-        categoria: filtroCategoria || undefined,
+        categoria: categoriaFiltro || undefined,
         pastaId: filtroPastaId ? Number(filtroPastaId) : undefined,
         tagId: filtroTagId ? Number(filtroTagId) : undefined,
         nomeArquivo: filtroNomeArquivo || undefined,
@@ -166,12 +167,9 @@ export const ListarAvisosDeIntencao = () => {
     setIsLoadingTags(true);
     setErroTags(null);
     try {
-      const response = await tagService.listar({
-        apenasAtivas: true,
-        pagina: 1,
-        itensPorPagina: 1000,
-      });
-      const tagsOrdenadas = [...response.itens].sort((a, b) => a.nome.localeCompare(b.nome));
+      const response = await tagService.listarPublico({ nome: undefined, pagina: 1, itensPorPagina: 1000 });
+      const mapped = (response.tags || []).map(t => ({ id: t.id, nome: t.nome, ativo: true, dataCriacao: '' }));
+      const tagsOrdenadas = [...mapped].sort((a, b) => a.nome.localeCompare(b.nome));
       setTags(tagsOrdenadas);
     } catch (error) {
       const mensagemErro = handleApiError(error);
@@ -302,7 +300,7 @@ export const ListarAvisosDeIntencao = () => {
               >
                 <option value="">Todas as categorias</option>
                 {tags.map((tag) => (
-                  <option key={tag.id} value={tag.nome}>
+                  <option key={tag.id} value={String(tag.id)}>
                     {tag.nome}
                   </option>
                 ))}
