@@ -2,15 +2,26 @@ import { Link } from 'react-router-dom';
 import { PrivateLayout } from '../../layouts/PrivateLayout';
 import { useAuth } from '../../contexts';
 
+type QuickAction = {
+  title: string;
+  description: string;
+  path: string;
+  icon: React.ReactNode;
+  color: string;
+  // menuName é usado para verificar se o usuário tem acesso ao menu correspondente
+  menuName?: string;
+};
+
 export const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, authData } = useAuth();
 
 
-  const quickActions = [
+  const quickActions: QuickAction[] = [
     {
       title: 'Nova Notícia',
       description: 'Criar e publicar uma nova notícia',
       path: '/admin/noticias',
+      menuName: 'Noticias',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -22,6 +33,7 @@ export const DashboardPage = () => {
       title: 'Novo Edital',
       description: 'Publicar um novo edital',
       path: '/admin/editais',
+      menuName: 'Editais',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -33,6 +45,7 @@ export const DashboardPage = () => {
       title: 'Aviso de Intenção',
       description: 'Criar aviso de intenção de contratar',
       path: '/admin/avisosdeintencao',
+      menuName: 'AvisosDeIntencao',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -44,6 +57,7 @@ export const DashboardPage = () => {
       title: 'Nova Legislação',
       description: 'Publicar nova legislação',
       path: '/admin/legislacao',
+      menuName: 'Legislacao',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
@@ -55,6 +69,7 @@ export const DashboardPage = () => {
       title: 'Nova Parceria',
       description: 'Criar nova parceria institucional',
       path: '/admin/parcerias',
+      menuName: 'Parcerias',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -66,6 +81,7 @@ export const DashboardPage = () => {
       title: 'Nova Transparência',
       description: 'Publicar documento de transparência',
       path: '/admin/transparencia',
+      menuName: 'Transparencia',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -77,6 +93,7 @@ export const DashboardPage = () => {
       title: 'Novo Processo',
       description: 'Criar novo processo administrativo',
       path: '/admin/processos',
+      menuName: 'Processos',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -88,6 +105,7 @@ export const DashboardPage = () => {
       title: 'Novo Relatório',
       description: 'Criar novo relatório institucional',
       path: '/admin/relatorios',
+      menuName: 'Relatorios',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -99,6 +117,7 @@ export const DashboardPage = () => {
       title: 'Upload Documento',
       description: 'Adicionar documentos ao sistema',
       path: '/admin/documentos',
+      menuName: 'Documentos',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -110,6 +129,7 @@ export const DashboardPage = () => {
       title: 'Gerenciar Usuários',
       description: 'Adicionar e gerenciar usuários',
       path: '/admin/usuarios',
+      menuName: 'Usuarios',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -121,6 +141,7 @@ export const DashboardPage = () => {
       title: 'Ver Relatórios',
       description: 'Acessar relatórios e estatísticas',
       path: '/admin/relatorios',
+      menuName: 'Relatorios',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -129,6 +150,14 @@ export const DashboardPage = () => {
       color: 'text-pink-600 bg-pink-50 hover:bg-pink-100',
     },
   ];
+
+  const allowedMenus = new Set(authData?.menus?.map(m => m.nome) ?? []);
+
+  const visibleActions = quickActions.filter(a => {
+    // Se a ação não declarar menuName, consideramos que não deve ser exibida por padrão
+    if (!a.menuName) return false;
+    return allowedMenus.has(a.menuName);
+  });
 
   return (
     <PrivateLayout>
@@ -145,7 +174,7 @@ export const DashboardPage = () => {
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Acesso Rápido</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {quickActions.map((action, index) => (
+            {visibleActions.map((action, index) => (
               <Link
                 key={index}
                 to={action.path}

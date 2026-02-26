@@ -18,17 +18,33 @@ export const CriarPerfil = () => {
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
 
+  const permissoesToArray = (p: PermissaoInfo) => {
+    const list: string[] = [];
+    if (p.podeCadastrar) list.push('Cadastrar');
+    if (p.podeEditar) list.push('Editar');
+    if (p.podeExcluir) list.push('Excluir');
+    if (p.podeListar) list.push('Listar');
+    if (p.podeSuspenderHabilitar) list.push('Suspender/Habilitar');
+    if (p.podeVisualizar) list.push('Visualizar');
+    return list;
+  };
+
   const handleSubmit = async (formData: FormData) => {
     setErro(null);
     setSucesso(null);
     setIsSubmitting(true);
 
     try {
+      // enviar tanto o objeto de flags quanto o array de nomes (compatibilidade com backend)
+      const permissoesArray = permissoesToArray(formData.permissoes);
       await perfilService.cadastrar({
         nome: formData.nome,
         descricao: formData.descricao,
         menusIds: formData.menusIds,
+        // campo principal com as flags (mantido para tipagem/compatibilidade no cliente)
         permissoes: formData.permissoes,
+        // campo adicional com nomes — o backend costuma retornar/entender este formato
+        permissoesNomes: permissoesArray,
       });
 
       setSucesso('Perfil criado com sucesso!');

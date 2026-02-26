@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PrivateLayout } from '../../../layouts/PrivateLayout';
 import { usuarioService } from '../../../services/usuarioService';
+import { perfilService } from '../../../services/perfilService';
+import type { PerfilListaItem } from '../../../services/perfilService';
 
 export const CriarUsuarios = () => {
   const navigate = useNavigate();
@@ -9,6 +11,21 @@ export const CriarUsuarios = () => {
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
   const [emailEmUso, setEmailEmUso] = useState(false);
+  const [perfis, setPerfis] = useState<PerfilListaItem[]>([]);
+
+  useEffect(() => {
+    const carregarPerfis = async () => {
+      try {
+        // solicitar muitos itens para garantir trazer todos os perfis
+        const resposta = await perfilService.listar({ itensPorPagina: 1000 });
+        setPerfis(resposta.perfis || []);
+      } catch {
+        // não interrompe o fluxo, apenas log
+      }
+    };
+
+    carregarPerfis();
+  }, []);
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -221,9 +238,9 @@ export const CriarUsuarios = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0C2856] focus:border-transparent cursor-pointer"
             >
               <option value={0}>Selecione um perfil</option>
-              <option value={1}>Administrador</option>
-              <option value={2}>Gerenciador</option>
-              <option value={3}>Usuário</option>
+              {perfis.map((p) => (
+                <option key={p.id} value={p.id}>{p.nome}</option>
+              ))}
             </select>
           </div>
 

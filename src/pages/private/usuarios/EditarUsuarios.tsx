@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PrivateLayout } from '../../../layouts/PrivateLayout';
 import { usuarioService } from '../../../services/usuarioService';
 import { useAuth } from '../../../contexts';
+import { perfilService } from '../../../services/perfilService';
+import type { PerfilListaItem } from '../../../services/perfilService';
 
 export const EditarUsuarios = () => {
   const navigate = useNavigate();
@@ -12,9 +14,11 @@ export const EditarUsuarios = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
-  const [ehPropriaContaPermitida, setEhPropriaContaPermitida] = useState(true);
-  const [usuarioSuspenso, setUsuarioSuspenso] = useState(false);
-  const [usuarioAdmin, setUsuarioAdmin] = useState(false);
+  const [ehPropriaContaPermitida] = useState(true);
+  const [usuarioSuspenso] = useState(false);
+  const [usuarioAdmin] = useState(false);
+
+  const [perfis, setPerfis] = useState<PerfilListaItem[]>([]);
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -25,69 +29,46 @@ export const EditarUsuarios = () => {
 
   // Carrega dados do usuário ao montar o componente
   useEffect(() => {
-    const carregarUsuario = async () => {
-      if (!id) {
-        setErro('ID do usuário não informado');
-        return;
-      }
-
-      // Validar se está tentando editar a própria conta
-      if (user && user.id === id) {
-        setErro('Não é permitido editar sua própria conta. Solicite a outro administrador para fazer alterações em sua conta.');
-        setEhPropriaContaPermitida(false);
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      setErro(null);
-
+    const carregarPerfis = async () => {
       try {
-        const usuario = await usuarioService.obterPorId(parseInt(id));
+        const resposta = await perfilService.listar({ itensPorPagina: 1000 });
+        setPerfis(resposta.perfis || []);
+        // return the fetched list so other functions can use it without closing over `perfis`
+        return resposta.perfis || [];
+      } catch {
+        // ignore
+        return [];
+      }
+    };
 
-        // Validar se o usuário é admin (status 3) - não pode ser editado
-        if (usuario.status === 3) {
-          setErro('❌ Este usuário é um administrador e não pode ser editado. Administradores não podem ser modificados.');
-          setUsuarioAdmin(true);
-          setFormData({
-            nome: usuario.nome,
-            email: usuario.email,
-            perfilId: 0,
-            ativo: usuario.ativo,
-          });
-          setIsLoading(false);
-          return;
-        }
+    const carregarUsuario = async (perfisLocal: PerfilListaItem[]) => {
+      try {
+        setIsLoading(true);
+        const resposta = await usuarioService.obterPorId(Number(id));
 
-        // Validar se o usuário está suspenso (status 2)
-        if (usuario.status === 2) {
-          setErro('🔒 Este usuário está suspenso e não pode ser editado. Habilite o usuário primeiro para poder fazer alterações.');
-          setUsuarioSuspenso(true);
-          setFormData({
-            nome: usuario.nome,
-            email: usuario.email,
-            perfilId: 0,
-            ativo: usuario.ativo,
-          });
-          setIsLoading(false);
-          return;
-        }
-
+        // use the provided perfisLocal (fetched list) instead of closing over outer `perfis`
         setFormData({
-          nome: usuario.nome,
-          email: usuario.email,
-          perfilId: 0,
-          ativo: usuario.ativo,
+          nome: resposta.nome,
+          email: resposta.email,
+          ativo: resposta.ativo,
+          perfilId: resposta.perfilNome
+            ? (perfisLocal.find(p => p.nome === resposta.perfilNome)?.id ?? 0)
+            : 0,
         });
-      } catch (error) {
-        const mensagemErro = error instanceof Error ? error.message : 'Erro ao carregar usuário';
-        setErro(mensagemErro);
+      } catch {
+        setErro('Erro ao carregar usuário');
       } finally {
         setIsLoading(false);
       }
     };
 
-    carregarUsuario();
+    // load perfis first and pass the result to carregarUsuario so we don't capture `perfis` in the effect
+    const init = async () => {
+      const perfisFetched = await carregarPerfis();
+      await carregarUsuario(perfisFetched);
+    };
+
+    init();
   }, [id, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -241,9 +222,9 @@ export const EditarUsuarios = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0C2856] focus:border-transparent cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value={0}>Selecione um perfil</option>
-              <option value={1}>Administrador</option>
-              <option value={2}>Gerenciador</option>
-              <option value={3}>Usuário</option>
+              {perfis.map((p) => (
+                <option key={p.id} value={p.id}>{p.nome}</option>
+              ))}
             </select>
           </div>
 

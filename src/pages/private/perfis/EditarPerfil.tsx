@@ -14,6 +14,9 @@ interface PerfilInitialData {
     podeCadastrar: boolean;
     podeEditar: boolean;
     podeSuspenderHabilitar: boolean;
+    podeExcluir?: boolean;
+    podeListar?: boolean;
+    podeVisualizar?: boolean;
   };
 }
 
@@ -26,6 +29,17 @@ export const EditarPerfil = () => {
   const [sucesso, setSucesso] = useState<string | null>(null);
   const [initialData, setInitialData] = useState<PerfilInitialData | null>(null);
 
+  const permissoesToArray = (p: PerfilInitialData['permissoes']) => {
+    const list: string[] = [];
+    if (p.podeCadastrar) list.push('Cadastrar');
+    if (p.podeEditar) list.push('Editar');
+    if (p.podeExcluir) list.push('Excluir');
+    if (p.podeListar) list.push('Listar');
+    if (p.podeSuspenderHabilitar) list.push('Suspender/Habilitar');
+    if (p.podeVisualizar) list.push('Visualizar');
+    return list;
+  };
+
   useEffect(() => {
     const carregarPerfil = async () => {
       if (!id) {
@@ -37,15 +51,25 @@ export const EditarPerfil = () => {
       try {
         setIsLoading(true);
         const perfil = await perfilService.obterPorId(Number(id));
+
+        const normalize = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const has = (needle: string) => {
+          const n = normalize(needle);
+          return (perfil.permissoes || []).some(p => normalize(p).includes(n));
+        };
+
         setInitialData({
           id: perfil.id,
           nome: perfil.nome,
           descricao: perfil.descricao,
           menusIds: perfil.menus?.map(m => m.id) || [],
           permissoes: {
-            podeCadastrar: perfil.permissoes?.includes('podeCadastrar') || false,
-            podeEditar: perfil.permissoes?.includes('podeEditar') || false,
-            podeSuspenderHabilitar: perfil.permissoes?.includes('podeSuspenderHabilitar') || false,
+            podeCadastrar: has('Cadastrar'),
+            podeEditar: has('Editar'),
+            podeExcluir: has('Excluir'),
+            podeListar: has('Listar'),
+            podeSuspenderHabilitar: has('SuspenderHabilitar') || has('Suspender') || has('Habilitar') || has('Suspender/Habilitar'),
+            podeVisualizar: has('Visualizar') || has('Ver'),
           },
         });
       } catch (error) {
@@ -70,12 +94,14 @@ export const EditarPerfil = () => {
     setIsSubmitting(true);
 
     try {
+      const permissoesArray = permissoesToArray(formData.permissoes);
       await perfilService.atualizar(Number(id), {
         nome: formData.nome,
         descricao: formData.descricao,
         menusIds: formData.menusIds,
         permissoes: formData.permissoes,
-      });
+        permissoesNomes: permissoesArray,
+       });
 
       setSucesso('Perfil atualizado com sucesso!');
 

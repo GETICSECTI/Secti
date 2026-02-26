@@ -29,6 +29,9 @@ export const PerfilForm = ({ initialData, onSubmit, isSubmitting }: PerfilFormPr
       podeCadastrar: false,
       podeEditar: false,
       podeSuspenderHabilitar: false,
+      podeExcluir: false,
+      podeListar: true,
+      podeVisualizar: false,
     },
   });
 
@@ -102,7 +105,15 @@ export const PerfilForm = ({ initialData, onSubmit, isSubmitting }: PerfilFormPr
       erros.push('Selecione no mínimo um menu.');
     }
 
-    if (!formData.permissoes.podeCadastrar && !formData.permissoes.podeEditar && !formData.permissoes.podeSuspenderHabilitar) {
+    // Require at least one permission among all available permissions
+    if (
+      !formData.permissoes.podeCadastrar &&
+      !formData.permissoes.podeEditar &&
+      !formData.permissoes.podeSuspenderHabilitar &&
+      !formData.permissoes.podeExcluir &&
+      !formData.permissoes.podeListar &&
+      !formData.permissoes.podeVisualizar
+    ) {
       erros.push('Selecione no mínimo uma permissão.');
     }
 
@@ -234,6 +245,48 @@ export const PerfilForm = ({ initialData, onSubmit, isSubmitting }: PerfilFormPr
                 Pode Suspender/Habilitar
               </label>
               <p className="ml-2 text-xs text-gray-500">Permite ativar/desativar registros</p>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="podeExcluir"
+                type="checkbox"
+                checked={!!formData.permissoes.podeExcluir}
+                onChange={() => handlePermissaoChange('podeExcluir')}
+                className="w-5 h-5 text-[#195CE3] border-gray-300 rounded focus:ring-[#195CE3] cursor-pointer"
+              />
+              <label htmlFor="podeExcluir" className="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
+                Pode Excluir
+              </label>
+              <p className="ml-2 text-xs text-gray-500">Permite remover registros</p>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="podeListar"
+                type="checkbox"
+                checked={!!formData.permissoes.podeListar}
+                onChange={() => handlePermissaoChange('podeListar')}
+                className="w-5 h-5 text-[#195CE3] border-gray-300 rounded focus:ring-[#195CE3] cursor-pointer"
+              />
+              <label htmlFor="podeListar" className="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
+                Pode Listar
+              </label>
+              <p className="ml-2 text-xs text-gray-500">Permite visualizar listagens</p>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="podeVisualizar"
+                type="checkbox"
+                checked={!!formData.permissoes.podeVisualizar}
+                onChange={() => handlePermissaoChange('podeVisualizar')}
+                className="w-5 h-5 text-[#195CE3] border-gray-300 rounded focus:ring-[#195CE3] cursor-pointer"
+              />
+              <label htmlFor="podeVisualizar" className="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
+                Pode Visualizar
+              </label>
+              <p className="ml-2 text-xs text-gray-500">Permite ver detalhes de registros</p>
             </div>
           </div>
         </div>

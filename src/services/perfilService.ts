@@ -12,6 +12,9 @@ export interface PermissaoInfo {
   podeCadastrar: boolean;
   podeEditar: boolean;
   podeSuspenderHabilitar: boolean;
+  podeExcluir?: boolean;
+  podeListar?: boolean;
+  podeVisualizar?: boolean;
 }
 
 export interface Menu {
@@ -60,6 +63,8 @@ export interface CadastrarPerfilRequest {
   descricao: string;
   menusIds: number[];
   permissoes: PermissaoInfo;
+  // optional compatibility field: array of permission names
+  permissoesNomes?: string[];
 }
 
 export interface AtualizarPerfilRequest {
@@ -67,6 +72,8 @@ export interface AtualizarPerfilRequest {
   descricao: string;
   menusIds: number[];
   permissoes: PermissaoInfo;
+  // optional compatibility field: array of permission names
+  permissoesNomes?: string[];
 }
 
 export interface ModuloPermissoes {
