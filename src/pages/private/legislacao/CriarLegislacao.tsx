@@ -286,7 +286,7 @@ export const CriarLegislacao = () => {
                   <div className="flex items-start gap-3">
                     {getIconeTipo(previewArquivo.tipo)}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 wrap-break-word">
+                      <p className="text-sm font-medium text-gray-900 wrap-break-word break-all">
                         {previewArquivo.nome}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">

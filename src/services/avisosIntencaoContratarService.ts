@@ -203,7 +203,7 @@ const buildFormData = (data: CadastrarAvisoIntencaoContratarRequest | EditarAvis
   const formData = new FormData();
 
   formData.append('Titulo', data.titulo.trim());
-  formData.append('AnoPublicacao', data.dataPublicacao.toString());
+  formData.append('DataPublicacao', data.dataPublicacao.toString());
 
   if (data.caminho) {
     formData.append('Caminho', data.caminho.trim());

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 export interface PerguntaFrequentePublica {
-  id: number;
+  id?: number; // pode vir sem id do backend
   pergunta: string;
   resposta: string;
   ordem: number;
@@ -13,16 +13,15 @@ interface AccordionPerguntasProps {
 }
 
 export const AccordionPerguntas = ({ perguntas }: AccordionPerguntasProps) => {
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  // usar string como chave para garantir unicidade mesmo quando valores numéricos repetirem
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const toggleExpanded = (id: number) => {
-    const newExpanded = new Set(expandedIds);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
+  const toggleExpanded = (id: string) => {
+    if (expandedId === id) {
+      setExpandedId(null);
     } else {
-      newExpanded.add(id);
+      setExpandedId(id);
     }
-    setExpandedIds(newExpanded);
   };
 
   if (!perguntas || perguntas.length === 0) {
@@ -31,18 +30,20 @@ export const AccordionPerguntas = ({ perguntas }: AccordionPerguntasProps) => {
 
   return (
     <div className="space-y-3">
-      {perguntas.map((pergunta) => {
-        const isExpanded = expandedIds.has(pergunta.id);
+      {perguntas.map((pergunta, index) => {
+        // construir uma chave única: prefira id quando existir, senão usar ordem+index
+        const itemKey = pergunta.id !== undefined ? `id-${pergunta.id}` : `ord-${pergunta.ordem ?? 'n'}-${index}`;
+        const isExpanded = expandedId === itemKey;
 
         return (
           <div
-            key={pergunta.id}
+            key={itemKey}
             className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
           >
             {/* Header do Accordion */}
             <button
               type="button"
-              onClick={() => toggleExpanded(pergunta.id)}
+              onClick={() => toggleExpanded(itemKey)}
               className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors cursor-pointer"
             >
               <h3 className="text-base font-semibold text-gray-900 flex-1 pr-4">
@@ -69,4 +70,3 @@ export const AccordionPerguntas = ({ perguntas }: AccordionPerguntasProps) => {
     </div>
   );
 };
-
