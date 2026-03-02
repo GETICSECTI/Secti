@@ -59,6 +59,7 @@ import {FaleComOuvidoria} from "./pages/public/ouvidoria/FaleComOuvidoria.tsx";
 import {RedeOuvidorias} from "./pages/public/ouvidoria/RedeOuvidorias.tsx";
 import {PerguntasFrequentes} from "./pages/public/transparencia/PerguntasFrequentes.tsx";
 import {InformacoesInstitucionais} from "./pages/public/transparencia/InformacoesInstitucionais.tsx";
+import {QuemEQuem} from "./pages/public/transparencia/QuemEQuem.tsx";
 import { Transparencia } from './pages/public/secti/Transparencia.tsx';
 import {ListarUsuarios} from "./pages/private/usuarios/ListarUsuarios.tsx";
 import {CriarUsuarios} from "./pages/private/usuarios/CriarUsuarios.tsx";
@@ -103,6 +104,7 @@ function App() {
           <Route path="/transparencia" element={<Transparencia/>}/>
           <Route path="/transparencia/perguntas-frequentes" element={<PerguntasFrequentes/>}/>
           <Route path="/transparencia/informacoes-institucionais" element={<InformacoesInstitucionais/>}/>
+          <Route path="/transparencia/quem-e-quem" element={<QuemEQuem/>}/>
           <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade/>} />
           <Route
             path="/login"

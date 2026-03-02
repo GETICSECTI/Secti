@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Paginacao } from './Paginacao';
 
 export interface DocumentItem {
   id: number;
@@ -243,67 +244,11 @@ export const DocumentList = ({
             ))}
 
             {/* Paginação */}
-            {totalPaginas > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-8 pt-8">
-                {/* Botão Anterior */}
-                <button
-                  onClick={() => irParaPagina(paginaAtual - 1)}
-                  disabled={paginaAtual === 1}
-                  className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
-                    paginaAtual === 1
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-white cursor-pointer text-[#0C2856] border border-[#0C2856] hover:bg-[#0C2856] hover:text-white'
-                  }`}
-                >
-                  Anterior
-                </button>
-
-                {/* Números das páginas */}
-                <div className="flex gap-2">
-                  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(numero => {
-                    // Mostrar apenas algumas páginas (lógica de ellipsis)
-                    if (
-                      numero === 1 ||
-                      numero === totalPaginas ||
-                      (numero >= paginaAtual - 1 && numero <= paginaAtual + 1)
-                    ) {
-                      return (
-                        <button
-                          key={numero}
-                          onClick={() => irParaPagina(numero)}
-                          className={`w-10 h-10 rounded-lg font-medium transition duration-200 ${
-                            paginaAtual === numero
-                              ? 'bg-[#0C2856] text-white'
-                              : 'bg-white cursor-pointer text-[#0C2856] border border-gray-300 hover:border-[#0C2856] hover:bg-gray-50'
-                          }`}
-                        >
-                          {numero}
-                        </button>
-                      );
-                    } else if (
-                      numero === paginaAtual - 2 ||
-                      numero === paginaAtual + 2
-                    ) {
-                      return <span key={numero} className="px-2 py-2 text-gray-500">...</span>;
-                    }
-                    return null;
-                  })}
-                </div>
-
-                {/* Botão Próximo */}
-                <button
-                  onClick={() => irParaPagina(paginaAtual + 1)}
-                  disabled={paginaAtual === totalPaginas}
-                  className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
-                    paginaAtual === totalPaginas
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-white cursor-pointer text-[#0C2856] border border-[#0C2856] hover:bg-[#0C2856] hover:text-white'
-                  }`}
-                >
-                  Próximo
-                </button>
-              </div>
-            )}
+            <Paginacao
+              paginaAtual={paginaAtual}
+              totalPaginas={totalPaginas}
+              onMudarPagina={irParaPagina}
+            />
           </>
         )}
       </div>

@@ -2,6 +2,7 @@ import { PublicLayout } from '../../../layouts/PublicLayout.tsx';
 import { HeroSection } from '../../../components/HeroSection.tsx';
 import { useState, useEffect, useCallback } from 'react';
 import { useSEO } from '../../../utils/useSEO.ts';
+import { Paginacao } from '../../../components/Paginacao';
 import {
   avisosIntencaoContratarService,
   type AvisoIntencaoContratarPublicoItem,
@@ -328,50 +329,12 @@ export const AvisosIntencaoContratar = () => {
                     ))}
 
                     {/* Paginação */}
-                    {totalPaginas > 1 && (
-                      <div className="flex justify-center items-center gap-2 mt-8 pt-8 flex-wrap">
-                        <button
-                          onClick={() => handleMudarPagina(paginaAtual - 1)}
-                          disabled={paginaAtual === 1 || isLoading}
-                          className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
-                            paginaAtual === 1
-                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                              : 'bg-white cursor-pointer text-[#0C2856] border border-[#0C2856] hover:bg-[#0C2856] hover:text-white'
-                          }`}
-                        >
-                          Anterior
-                        </button>
-
-                        <div className="flex gap-2">
-                          {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(numero => (
-                            <button
-                              key={numero}
-                              onClick={() => handleMudarPagina(numero)}
-                              disabled={isLoading}
-                              className={`px-3 py-2 rounded-lg font-medium transition duration-200 ${
-                                numero === paginaAtual
-                                  ? 'bg-[#0C2856] text-white'
-                                  : 'bg-white cursor-pointer text-[#0C2856] border border-[#0C2856] hover:bg-[#0C2856] hover:text-white'
-                              }`}
-                            >
-                              {numero}
-                            </button>
-                          ))}
-                        </div>
-
-                        <button
-                          onClick={() => handleMudarPagina(paginaAtual + 1)}
-                          disabled={paginaAtual === totalPaginas || isLoading}
-                          className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
-                            paginaAtual === totalPaginas
-                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                              : 'bg-white cursor-pointer text-[#0C2856] border border-[#0C2856] hover:bg-[#0C2856] hover:text-white'
-                          }`}
-                        >
-                          Próximo
-                        </button>
-                      </div>
-                    )}
+                    <Paginacao
+                      paginaAtual={paginaAtual}
+                      totalPaginas={totalPaginas}
+                      onMudarPagina={handleMudarPagina}
+                      disabled={isLoading}
+                    />
                   </>
                 )}
               </div>

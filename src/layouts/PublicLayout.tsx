@@ -196,6 +196,7 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
                           {/* Menus Fixos */}
                           <Link to="/transparencia/informacoes-institucionais" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/transparencia/informacoes-institucionais') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Informações Institucionais</Link>
                           <Link to="/transparencia/perguntas-frequentes" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/transparencia/perguntas-frequentes') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Perguntas Frequentes</Link>
+                          <Link to="/transparencia/quem-e-quem" className={`block px-4 py-2 text-sm transition-colors ${isActiveLink('/transparencia/quem-e-quem') ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-100'}`}>Quem é Quem</Link>
 
                           {/* Menus Dinâmicos */}
                           {loadingMenus ? (
@@ -400,6 +401,7 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
                       {/* Menus Fixos */}
                       <Link to="/transparencia/informacoes-institucionais" onClick={() => setMobileOpen(false)} className={`block px-3 py-2 rounded-md text-sm transition-colors ${isActiveLink('/transparencia/informacoes-institucionais') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'}`}>Informações Institucionais</Link>
                       <Link to="/transparencia/perguntas-frequentes" onClick={() => setMobileOpen(false)} className={`block px-3 py-2 rounded-md text-sm transition-colors ${isActiveLink('/transparencia/perguntas-frequentes') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'}`}>Perguntas Frequentes</Link>
+                      <Link to="/transparencia/quem-e-quem" onClick={() => setMobileOpen(false)} className={`block px-3 py-2 rounded-md text-sm transition-colors ${isActiveLink('/transparencia/quem-e-quem') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'}`}>Quem é Quem</Link>
 
                       {/* Divisor */}
                       {!loadingMenus && transparenciaMenus.length > 0 && (
