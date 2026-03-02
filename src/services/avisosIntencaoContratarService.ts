@@ -96,6 +96,10 @@ export interface AvisoIntencaoContratarPublicoItem {
   titulo: string;
   caminhoArquivo: string;
   dataPublicacao: string; // Data completa do backend
+  tags?: Array<{
+    id: number;
+    nome: string;
+  }>;
 }
 
 export interface AvisoIntencaoContratarPublicoListResponse {
@@ -107,8 +111,10 @@ export interface AvisoIntencaoContratarPublicoListResponse {
 }
 
 export interface AvisoIntencaoContratarPublicoFilters {
-  caminho?: string;
-  categoria?: string;
+  titulo?: string;
+  ano?: number;
+  dataPublicacao?: string;
+  tagIds?: number[];
   ordenarPor?: string;
   ordenarDescendente?: boolean;
   pagina?: number;
@@ -319,11 +325,17 @@ export const avisosIntencaoContratarService = {
   listarPublico: async (filtros?: AvisoIntencaoContratarPublicoFilters): Promise<AvisoIntencaoContratarPublicoListResponse> => {
     const params = new URLSearchParams();
 
-    if (filtros?.caminho) {
-      params.append('Caminho', filtros.caminho);
+    if (filtros?.titulo) {
+      params.append('Titulo', filtros.titulo);
     }
-    if (filtros?.categoria) {
-      params.append('Categoria', filtros.categoria);
+    if (filtros?.ano !== undefined) {
+      params.append('Ano', filtros.ano.toString());
+    }
+    if (filtros?.dataPublicacao) {
+      params.append('DataPublicacao', filtros.dataPublicacao);
+    }
+    if (filtros?.tagIds && filtros.tagIds.length > 0) {
+      filtros.tagIds.forEach(id => params.append('TagIds', id.toString()));
     }
     if (filtros?.ordenarPor) {
       params.append('OrdenarPor', filtros.ordenarPor);

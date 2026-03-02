@@ -24,6 +24,7 @@ import { Servidor } from './pages/public/secti/Servidor.tsx';
 import { Parcerias } from './pages/public/secti/Parcerias.tsx';
 import { Legislacao } from './pages/public/secti/Legislacao.tsx';
 import { Relatorios } from './pages/public/secti/Relatorios.tsx';
+import { AvisosIntencaoContratar } from './pages/public/secti/AvisosIntencaoContratar.tsx';
 import { Projetos } from './pages/public/Projetos.tsx';
 import { PoliticaPrivacidade } from './pages/public/PoliticaPrivacidade.tsx';
 
@@ -95,6 +96,7 @@ function App() {
           <Route path="/secti/legislacao" element={<Legislacao/>}/>
           <Route path="/secti/parcerias" element={<Parcerias />} />
           <Route path="/secti/relatorios" element={<Relatorios />} />
+          <Route path="/secti/avisos-intencao-contratar" element={<AvisosIntencaoContratar />} />
           <Route path="/ouvidoria/apresentacao" element={<ApresentacaoOuvidoria/>}/>
           <Route path="/ouvidoria/fale-com-ouvidoria" element={<FaleComOuvidoria/>}/>
           <Route path="/ouvidoria/rede-ouvidorias" element={<RedeOuvidorias/>}/>
