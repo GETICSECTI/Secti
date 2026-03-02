@@ -99,6 +99,11 @@ export const ASecretaria = () => {
                     <p className="text-sm text-gray-200">Universidade de Pernambuco</p>
                   </div>
                 </div>
+              </div>
+            </div>
+            <div className="bg-[#0C2856] mt-8 rounded-lg p-8 text-white">
+              <h2 className="text-2xl md:text-3xl font-bold mb-6">Contratos de Gestão</h2>
+              <div className="grid sm:grid-cols-2 gap-6">
                 <div className="flex items-start space-x-3">
                   <div>
                     <h4 className="font-semibold text-lg">Itep</h4>

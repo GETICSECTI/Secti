@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLinkedin, faXTwitter, faFacebook, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
-import { faArrowLeft, faCalendar, faUser, faShare } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCalendar, faUser, faShare, faRotate } from '@fortawesome/free-solid-svg-icons';
 import { useSEO } from '../../utils/useSEO.ts';
 import { noticiasService, type NoticiaDetalhada } from '../../services/noticiasService';
 import { handleApiError } from '../../utils/errorHandler';
@@ -156,6 +156,12 @@ export const VisualizarNoticia = () => {
               <FontAwesomeIcon icon={faCalendar} />
               <span>{formatarDataBrasileira(noticia.dataPublicacao)}</span>
             </div>
+            {noticia.dataAtualizacao && noticia.dataAtualizacao !== noticia.dataPublicacao && (
+              <div className="flex items-center gap-2">
+                <FontAwesomeIcon icon={faRotate} />
+                <span>Atualizado em {formatarDataBrasileira(noticia.dataAtualizacao)}</span>
+              </div>
+            )}
             {noticia.tags && noticia.tags.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
                 {noticia.tags.map((tag) => (

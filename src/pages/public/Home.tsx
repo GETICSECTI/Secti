@@ -46,35 +46,39 @@ const slides: SlideItem[] = [
   },
 ];
 
+// Unidades Vinculadas (EC e Parqtel)
+const unidadesVinculadas: InstituicaoItem[] = [
+  {
+    id: 1,
+    nome: 'Espaço Ciência',
+    logo: ECBanner,
+    url: 'https://www.espacociencia.pe.gov.br/',
+    descricao: 'Espaço Ciência',
+  },
+  {
+    id: 2,
+    nome: 'PARQTEL',
+    logo: PARQTELBanner,
+    url: 'https://parqtel.pe.gov.br/',
+    descricao: 'PARQTEL',
+  },
+];
+
 // Instituições Vinculadas
 const instituicoesVinculadas: InstituicaoItem[] = [
   {
     id: 1,
-    nome: 'PARQTEL',
-    logo: PARQTELBanner,
-    url: 'https://parqtel.pe.gov.br/',
-    descricao: 'PARQTEL'
-  },
-  {
-    id: 2,
     nome: 'FACEPE',
     logo: FacepeBanner,
     url: 'https://www.facepe.br/',
-    descricao: 'Fundação de Amparo à Ciência e Tecnologia do Estado de Pernambuco'
+    descricao: 'Fundação de Amparo à Ciência e Tecnologia do Estado de Pernambuco',
   },
   {
-    id: 3,
-    nome: 'Espaço Ciência',
-    logo: ECBanner,
-    url: 'https://www.espacociencia.pe.gov.br/',
-    descricao: 'Espaço Ciência'
-  },
-  {
-    id: 4,
+    id: 2,
     nome: 'UPE',
     logo: UPEBanner,
     url: 'https://www.upe.br/',
-    descricao: 'UPE',
+    descricao: 'Universidade de Pernambuco',
   },
 ];
 
@@ -85,14 +89,14 @@ const instituicoesContratoGestao: InstituicaoItem[] = [
     nome: 'Porto Digital',
     logo: PortoDigitalBanner,
     url: 'https://www.portodigital.org/',
-    descricao: 'Parque Tecnológico de Pernambuco'
+    descricao: 'Parque Tecnológico de Pernambuco',
   },
   {
-    id: 4,
+    id: 2,
     nome: 'ITEP',
     logo: ITEPBanner,
     url: 'https://www.itep.br/',
-    descricao: 'Instituto de Tecnologia de Pernambuco'
+    descricao: 'Instituto de Tecnologia de Pernambuco',
   },
 ];
 
@@ -188,6 +192,7 @@ export const Home = () => {
               />
               <SecaoProjetos />
               <SecaoInstituicoes
+                  unidadesVinculadas={unidadesVinculadas}
                   instituicoesVinculadas={instituicoesVinculadas}
                   instituicoesContratoGestao={instituicoesContratoGestao}
               />
