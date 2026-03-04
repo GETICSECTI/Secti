@@ -140,7 +140,7 @@ export const VisualizarNoticia = () => {
           </nav>
 
           {/* Título */}
-          <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight max-w-4xl">
+          <h1 className="text-3xl break-all md:text-5xl font-bold mb-4 leading-tight max-w-4xl">
             {noticia.titulo}
           </h1>
 
