@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { LoginCredentials, User } from '../types/auth';
+import { useNavigate } from 'react-router-dom';
+import type { LoginCredentials, AuthData } from '../types/auth';
 import { authService } from '../services/authService';
+import { setUnauthorizedCallback } from '../lib/apiClient';
 import { AuthContext } from './AuthContext';
 
 interface AuthProviderProps {
@@ -9,47 +11,87 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [authData, setAuthData] = useState<AuthData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for existing authentication on mount
-    const initAuth = () => {
-      const token = authService.getToken();
-      const savedUser = authService.getUser();
+    // Registrar callback para quando token expirar (401)
+    setUnauthorizedCallback(() => {
+      setAuthData(null);
+      navigate('/login?sessionExpired=true', { replace: true });
+    });
+  }, [navigate]);
 
-      if (token && savedUser && authService.isTokenValid(token)) {
-        setUser(savedUser);
-      } else {
-        authService.logout();
+  useEffect(() => {
+    // Verificar autenticação existente ao carregar
+    const initAuth = async () => {
+      try {
+        // Tentar obter dados de autenticação do localStorage
+        const savedAuthData = authService.getAuthData();
+
+        if (savedAuthData) {
+          setAuthData(savedAuthData);
+        } else {
+          setAuthData(null);
+        }
+      } catch {
+        setAuthData(null);
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     initAuth();
   }, []);
 
+  useEffect(() => {
+    // Validação periódica do token (a cada 30 segundos)
+    // Verifica localmente se o token expirou usando a data de expiração
+    const tokenValidationInterval = setInterval(() => {
+      const currentAuthData = authService.getAuthData();
+
+      if (!currentAuthData) {
+        return;
+      }
+
+      try {
+        // Verificar se o token expirou comparando com a data de expiração
+        const expiracaoToken = new Date(currentAuthData.expiraEm).getTime();
+        const agora = new Date().getTime();
+
+        // Se o token expirou, limpar dados e redirecionar
+        if (agora > expiracaoToken) {
+          localStorage.removeItem('auth_data');
+          setAuthData(null);
+          navigate('/login?sessionExpired=true', { replace: true });
+        }
+      } catch {
+        //Intencionalmente Ignorado
+      }
+    }, 30000); // 30 segundos
+
+    return () => clearInterval(tokenValidationInterval);
+  }, [navigate]);
+
   const login = async (credentials: LoginCredentials) => {
-    setIsLoading(true);
+    const response = await authService.login(credentials);
+    setAuthData(response);
+  };
+
+  const logout = async () => {
     try {
-      const response = await authService.login(credentials);
-      authService.saveToken(response.token);
-      authService.saveUser(response.user);
-      setUser(response.user);
-    } finally {
-      setIsLoading(false);
+      await authService.logout();
+      setAuthData(null);
+    } catch {
+      //Intencionalmente Ignorado
     }
   };
 
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-  };
-
   const value = {
-    user,
-    isAuthenticated: !!user,
+    user: authData?.usuario || null,
+    authData,
+    isAuthenticated: !!authData,
     isLoading,
     login,
     logout,

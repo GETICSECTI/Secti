@@ -177,8 +177,8 @@ Before deploying to production:
 │   │   ├── public/            # Public pages
 │   │   │   ├── HomePage.tsx
 │   │   │   ├── AboutPage.tsx
-│   │   │   ├── LoginPage.tsx
-│   │   │   └── NotFoundPage.tsx
+│   │   │   ├── Login.tsx
+│   │   │   └── Erro404.tsx
 │   │   └── private/           # Protected pages
 │   │       ├── DashboardPage.tsx
 │   │       └── SettingsPage.tsx

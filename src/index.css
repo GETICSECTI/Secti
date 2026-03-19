@@ -211,3 +211,61 @@ body {
 .alto-contraste .container { }
 
 /* Fim alto contraste */
+
+/* VLibras - Estilos personalizados */
+[vw] {
+  z-index: 9999 !important;
+}
+
+[vw-access-button] {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 9999 !important;
+}
+
+/* Garantir que o VLibras fique acima de todos os elementos */
+[vw-plugin-wrapper] {
+  z-index: 9998 !important;
+}
+
+/* Ajuste para telas pequenas */
+@media (max-width: 640px) {
+  [vw-access-button] {
+    bottom: 10px !important;
+    right: 10px !important;
+  }
+}
+
+/* Fim VLibras */
+
+.LinkNoticia {
+    color: #195CE3;
+    font-weight: 500;
+}
+
+/* Editor-specific styles */
+.editor-content ul {
+  list-style-type: disc;
+  margin-left: 1.25rem; /* show bullets clearly */
+  padding-left: 1rem;
+}
+
+.editor-content ul li {
+  margin-bottom: 0.25rem;
+}
+
+h3 {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+ul {
+    list-style-type: disc;
+    margin-left:1.25rem;
+    padding-left: 1rem;
+}
+
+ul li::marker {
+    color: #195CE3;
+}
