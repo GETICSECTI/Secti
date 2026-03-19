@@ -20,7 +20,6 @@ export const authService = {
         }
       );
     } catch (error) {
-      console.error('Login API error:', error);
       const errorMessage = handleApiError(error);
       throw new Error(errorMessage);
     }
@@ -44,8 +43,8 @@ export const authService = {
     try {
       // Chamar logout para invalidar no backend se necessário
       await apiClient.post(API_ENDPOINTS.auth.logout);
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch {
+      // Intencionalmente ignorar erros ao tentar chamar o logout
     } finally {
       // Limpar dados de autenticação
       localStorage.removeItem(AUTH_DATA_KEY);
@@ -56,7 +55,6 @@ export const authService = {
     try {
       await apiClient.post(API_ENDPOINTS.auth.recuperarSenha, { email });
     } catch (error) {
-      console.error('Recuperar senha error:', error);
       const errorMessage = handleApiError(error);
       throw new Error(errorMessage);
     }
@@ -71,7 +69,6 @@ export const authService = {
     try {
       await apiClient.post(API_ENDPOINTS.auth.resetarSenha, data);
     } catch (error) {
-      console.error('Resetar senha error:', error);
       const errorMessage = handleApiError(error);
       throw new Error(errorMessage);
     }

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { relatoriosService, downloadRelatorio } from '../services/relatoriosService';
-import { handleApiError } from '../utils/errorHandler';
 
 interface RelatorioItem {
   id: number;
@@ -29,8 +28,7 @@ export const SecaoRelatorios = ({ limit = 6 }: SecaoRelatoriosProps) => {
           itensPorPagina: limit,
         });
         setRelatorios(response.relatorios);
-      } catch (error) {
-        console.error('Erro ao carregar relatórios:', handleApiError(error));
+      } catch {
         setRelatorios([]);
       } finally {
         setIsLoading(false);
@@ -44,8 +42,7 @@ export const SecaoRelatorios = ({ limit = 6 }: SecaoRelatoriosProps) => {
     try {
       setDownloadingId(Date.now());
       await downloadRelatorio(caminhoArquivo, titulo);
-    } catch (error) {
-      console.error('Erro ao baixar relatório:', error);
+    } catch {
       alert('Erro ao baixar relatório. Tente novamente.');
     } finally {
       setDownloadingId(null);
@@ -55,7 +52,7 @@ export const SecaoRelatorios = ({ limit = 6 }: SecaoRelatoriosProps) => {
 
   if (isLoading) {
     return (
-      <section className="py-12 bg-gradient-to-br from-[#0C2856] to-[#1a3f7d] text-white">
+      <section className="py-12 bg-linear-to-br from-[#0C2856] to-[#1a3f7d] text-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Relatórios</h2>

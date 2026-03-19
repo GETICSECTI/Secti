@@ -36,7 +36,6 @@ export const Transparencia = () => {
       } catch (err) {
         const mensagemErro = handleApiError(err);
         setError(mensagemErro);
-        console.error('Erro ao carregar submenus de transparência:', err);
       } finally {
         setIsLoading(false);
       }
@@ -101,7 +100,7 @@ export const Transparencia = () => {
                             </h3>
                           </div>
                           <svg
-                            className="w-6 h-6 text-gray-400 group-hover:text-[#195CE3] transition-colors ml-4 flex-shrink-0"
+                            className="w-6 h-6 text-gray-400 group-hover:text-[#195CE3] transition-colors ml-4 shrink-0"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -115,7 +114,7 @@ export const Transparencia = () => {
                           </svg>
                         </div>
                       </div>
-                      <div className="h-1 bg-gradient-to-r from-[#0C2856] to-[#195CE3] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                      <div className="h-1 bg-linear-to-r from-[#0C2856] to-[#195CE3] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                     </a>
                   ))}
                 </div>

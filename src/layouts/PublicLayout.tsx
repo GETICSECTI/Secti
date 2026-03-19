@@ -66,8 +66,7 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
         const response = await transparenciaService.listar();
         // O endpoint público retorna apenas titulo e url
         setTransparenciaMenus(response.submenus);
-      } catch (error) {
-        console.error('Erro ao carregar menus de transparência:', error);
+      } catch {
         setTransparenciaMenus([]);
       } finally {
         setLoadingMenus(false);

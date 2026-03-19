@@ -46,8 +46,7 @@ export const ListarRelatorios = ({
     setDownloadingId(relatorio.id);
     try {
       await downloadFn(relatorio.caminhoArquivo, relatorio.nomeArquivo);
-    } catch (error) {
-      console.error('Erro ao baixar relatório:', error);
+    } catch {
       setDownloadError('Erro ao baixar o relatório. Tente novamente.');
     } finally {
       setDownloadingId(null);

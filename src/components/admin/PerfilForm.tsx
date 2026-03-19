@@ -42,8 +42,8 @@ export const PerfilForm = ({ initialData, onSubmit, isSubmitting }: PerfilFormPr
         const menusResp = await perfilService.listarMenus();
 
         setMenus(menusResp.menus);
-      } catch (error) {
-        console.error('Erro ao carregar opções:', error);
+      } catch {
+        //Intencionalmente Ignorado
       } finally {
         setLoadingOpcoes(false);
       }

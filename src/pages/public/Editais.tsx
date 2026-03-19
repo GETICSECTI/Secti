@@ -39,8 +39,8 @@ export const Editais = () => {
         });
         const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
         setTags(tagsOrdenadas);
-      } catch (err) {
-        console.error('Erro ao carregar tags:', err);
+      } catch {
+        //Intencionalmente Ingorado
       } finally {
         setIsLoadingTags(false);
       }
@@ -83,7 +83,6 @@ export const Editais = () => {
       } catch (err) {
         const mensagemErro = handleApiError(err);
         setError(mensagemErro);
-        console.error('Erro ao carregar editais:', err);
       } finally {
         setIsLoading(false);
       }

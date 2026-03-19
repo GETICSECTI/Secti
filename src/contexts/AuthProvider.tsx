@@ -35,8 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } else {
           setAuthData(null);
         }
-      } catch (error) {
-        console.error('Erro na inicialização de autenticação:', error);
+      } catch {
         setAuthData(null);
       } finally {
         setIsLoading(false);
@@ -67,8 +66,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setAuthData(null);
           navigate('/login?sessionExpired=true', { replace: true });
         }
-      } catch (error) {
-        console.error('Erro ao validar token:', error);
+      } catch {
+        //Intencionalmente Ignorado
       }
     }, 30000); // 30 segundos
 
@@ -84,8 +83,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       await authService.logout();
       setAuthData(null);
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+    } catch {
+      //Intencionalmente Ignorado
     }
   };
 

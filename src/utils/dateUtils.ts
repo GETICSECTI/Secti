@@ -41,8 +41,7 @@ export const formatarDataBrasileira = (dateString: string | Date): string => {
 
       return `${dia}/${mes}/${ano}`;
     }
-  } catch (error) {
-    console.error('Erro ao formatar data:', error);
+  } catch {
     return 'Data inválida';
   }
 };
@@ -98,8 +97,7 @@ export const formatarDataPorExtenso = (dateString: string | Date): string => {
 
       return `${dia} de ${meses[mes]} de ${ano}`;
     }
-  } catch (error) {
-    console.error('Erro ao formatar data por extenso:', error);
+  } catch {
     return 'Data inválida';
   }
 };
@@ -129,8 +127,7 @@ export const extrairAno = (dateString: string | Date): number => {
     } else {
       return dateString.getFullYear();
     }
-  } catch (error) {
-    console.error('Erro ao extrair ano:', error);
+  } catch {
     return new Date().getFullYear();
   }
 };

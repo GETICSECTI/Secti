@@ -46,8 +46,7 @@ export const ListarAvisosIntencaoContratar = ({
     setDownloadingId(aviso.id);
     try {
       await downloadFn(aviso.caminhoArquivo, aviso.nomeArquivo);
-    } catch (error) {
-      console.error('Erro ao baixar aviso:', error);
+    } catch {
       setDownloadError('Erro ao baixar o aviso. Tente novamente.');
     } finally {
       setDownloadingId(null);

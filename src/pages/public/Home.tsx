@@ -9,7 +9,6 @@ import { SecaoProjetos } from '../../components/SecaoProjetos';
 import { SecaoInstituicoes } from '../../components/SecaoInstituicoes';
 import type { InstituicaoItem } from '../../components/SecaoInstituicoes';
 import { noticiasService } from '../../services/noticiasService';
-import { handleApiError } from '../../utils/errorHandler';
 import { LoadingScreen } from '../../components/LoadingScreen';
 import { formatarDataBrasileira } from '../../utils/dateUtils';
 import SectiPredio from "../../assets/SECTIPredio.jpg";
@@ -154,8 +153,7 @@ export const Home = () => {
 
           setNoticias(noticiasList);
         }
-      } catch (error) {
-        console.error('Erro ao carregar notícias:', handleApiError(error));
+      } catch {
         // Manter notícias em branco em caso de erro
       } finally {
         setIsLoadingNoticias(false);

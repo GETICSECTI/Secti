@@ -27,8 +27,8 @@ apiClient.interceptors.request.use(
         if (authData.token) {
           config.headers.Authorization = `Bearer ${authData.token}`;
         }
-      } catch (error) {
-        console.error('Error parsing auth data:', error);
+      } catch {
+          //Intencionalmente Ignorado
       }
     }
 

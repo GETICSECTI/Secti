@@ -76,8 +76,7 @@ export const DocumentosPublicosList = ({
     try {
       setDownloadingId(docId);
       await downloadDocumento(caminhoArquivo, nomeArquivo);
-    } catch (error) {
-      console.error('Erro ao baixar documento:', error);
+    } catch {
       alert('Erro ao baixar documento. Tente novamente.');
     } finally {
       setDownloadingId(null);

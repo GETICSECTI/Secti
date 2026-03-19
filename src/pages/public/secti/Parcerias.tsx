@@ -41,8 +41,8 @@ export const Parcerias = () => {
         });
         const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
         setTags(tagsOrdenadas);
-      } catch (err) {
-        console.error('Erro ao carregar tags:', err);
+      } catch {
+        //Intencionalmente Ignorado
       } finally {
         setIsLoadingTags(false);
       }
@@ -84,7 +84,6 @@ export const Parcerias = () => {
     } catch (err) {
       const mensagemErro = handleApiError(err);
       setError(mensagemErro);
-      console.error('Erro ao carregar parcerias:', err);
     } finally {
       setIsLoading(false);
     }

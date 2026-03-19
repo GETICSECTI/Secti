@@ -45,8 +45,7 @@ export const ListarProcessos = ({
     setDownloadingId(processo.id);
     try {
       await downloadFn(processo.caminhoArquivo, processo.nomeArquivo);
-    } catch (error) {
-      console.error('Erro ao baixar processo:', error);
+    } catch {
       setDownloadError('Erro ao baixar o processo. Tente novamente.');
     } finally {
       setDownloadingId(null);

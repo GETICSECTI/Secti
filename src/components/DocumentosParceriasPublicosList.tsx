@@ -77,8 +77,7 @@ export const DocumentosParceriasPublicosList = ({
     try {
       setDownloadingId(docId);
       await downloadParceria(caminhoArquivo, nomeArquivo);
-    } catch (error) {
-      console.error('Erro ao baixar parceria:', error);
+    } catch {
       alert('Erro ao baixar parceria. Tente novamente.');
     } finally {
       setDownloadingId(null);

@@ -28,8 +28,7 @@ export const SelectCategoria = ({
         const response = await tagService.listarPublico({ nome: undefined, pagina: 1, itensPorPagina: 1000 });
         const mapped = (response.tags || []).map(t => ({ id: t.id, nome: t.nome, ativo: true, dataCriacao: '' }));
         setTags(mapped);
-      } catch (err) {
-        console.error('Erro ao carregar tags:', err);
+      } catch {
         setError('Erro ao carregar categorias');
       } finally {
         setLoading(false);

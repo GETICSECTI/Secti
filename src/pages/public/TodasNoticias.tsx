@@ -60,7 +60,6 @@ export const TodasNoticias = () => {
     } catch (err) {
       const mensagemErro = handleApiError(err);
       setError(mensagemErro);
-      console.error('Erro ao carregar notícias:', err);
     } finally {
       setIsLoading(false);
     }

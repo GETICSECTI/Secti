@@ -42,7 +42,6 @@ export const VisualizarNoticia = () => {
       } catch (err) {
         const mensagemErro = handleApiError(err);
         setError(mensagemErro);
-        console.error('Erro ao carregar notícia:', err);
       } finally {
         setIsLoading(false);
       }

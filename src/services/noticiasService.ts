@@ -184,13 +184,6 @@ export const noticiasService = {
       throw new Error(errosValidacao.join(' '));
     }
 
-    console.log('[NoticiasService] Dados recebidos:', {
-      titulo: data.titulo,
-      autor: data.autor || 'não fornecido',
-      imagemCapa: data.imagemCapa ? `File: ${data.imagemCapa.name} (${data.imagemCapa.size} bytes)` : 'não fornecida',
-      imagemCapaUrl: data.imagemCapaUrl || 'não fornecida',
-    });
-
     // Se houver arquivo de imagem, usar FormData
     if (data.imagemCapa) {
       const formData = new FormData();
@@ -205,22 +198,11 @@ export const noticiasService = {
       }
       formData.append('ImagemCapa', data.imagemCapa);
 
-      console.log('[NoticiasService] Enviando com FormData');
-      console.log('[NoticiasService] FormData entries:');
-      for (const [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-        } else {
-          console.log(`  ${key}:`, value);
-        }
-      }
-
       const response = await apiClient.post<NoticiaResponse>('/Noticia/cadastrar', formData);
       return response.data;
     }
 
     // Caso contrário, usar JSON
-    console.log('[NoticiasService] Enviando com JSON');
     const payload = {
       titulo: data.titulo,
       conteudo: data.conteudo,
@@ -335,13 +317,6 @@ export const noticiasService = {
       throw new Error(errosValidacao.join(' '));
     }
 
-    console.log('[NoticiasService] Editar - Dados recebidos:', {
-      titulo: data.titulo,
-      autor: data.autor || 'não fornecido',
-      imagemCapa: data.imagemCapa ? `File: ${data.imagemCapa.name} (${data.imagemCapa.size} bytes)` : 'não fornecida',
-      imagemCapaUrl: data.imagemCapaUrl || 'não fornecida',
-    });
-
     // Se houver arquivo de imagem, usar FormData
     if (data.imagemCapa) {
       const formData = new FormData();
@@ -356,22 +331,11 @@ export const noticiasService = {
       }
       formData.append('ImagemCapa', data.imagemCapa);
 
-      console.log('[NoticiasService] Editar - Enviando com FormData');
-      console.log('[NoticiasService] Editar - FormData entries:');
-      for (const [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-        } else {
-          console.log(`  ${key}:`, value);
-        }
-      }
-
       const response = await apiClient.put<EditarNoticiaResponse>(`/Noticia/editar/${id}`, formData);
       return response.data;
     }
 
     // Caso contrário, usar JSON
-    console.log('[NoticiasService] Editar - Enviando com JSON');
     const payload = {
       titulo: data.titulo,
       conteudo: data.conteudo,

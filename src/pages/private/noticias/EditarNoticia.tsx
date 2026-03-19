@@ -72,13 +72,6 @@ export const EditarNoticia = () => {
     setError(null);
 
     try {
-      console.log('[EditarNoticia] Estado recebido do formulário:', {
-        titulo: formData.titulo,
-        autor: formData.autor,
-        imagemArquivo: formData.imagemArquivo ? `${formData.imagemArquivo.name} (${formData.imagemArquivo.size} bytes)` : 'null',
-        imagemDestaque: formData.imagemDestaque || 'vazio',
-      });
-
       // Preparar dados para o endpoint
       const dadosNoticia: EditarNoticiaRequest = {
         titulo: formData.titulo,
@@ -92,18 +85,11 @@ export const EditarNoticia = () => {
       // Se houver arquivo, enviar o arquivo
       if (formData.imagemArquivo) {
         dadosNoticia.imagemCapa = formData.imagemArquivo;
-        console.log('[EditarNoticia] Enviando arquivo:', formData.imagemArquivo.name);
       }
       // Senão, se houver URL (e não for blob), enviar a URL
       else if (formData.imagemDestaque && !formData.imagemDestaque.startsWith('blob:')) {
         dadosNoticia.imagemCapaUrl = formData.imagemDestaque;
-        console.log('[EditarNoticia] Enviando URL:', formData.imagemDestaque);
       }
-
-      console.log('[EditarNoticia] Dados a enviar:', {
-        ...dadosNoticia,
-        imagemCapa: dadosNoticia.imagemCapa ? `File(${dadosNoticia.imagemCapa.name})` : undefined,
-      });
 
       // Chamar API usando o ID da notícia inicial
       await noticiasService.editar(initialData.id || 0, dadosNoticia);

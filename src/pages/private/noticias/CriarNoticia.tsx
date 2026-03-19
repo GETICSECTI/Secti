@@ -30,13 +30,6 @@ export const CriarNoticia = () => {
     setSucesso(null);
 
     try {
-      console.log('[CriarNoticia] Estado recebido do formulário:', {
-        titulo: formData.titulo,
-        autor: formData.autor,
-        imagemArquivo: formData.imagemArquivo ? `${formData.imagemArquivo.name} (${formData.imagemArquivo.size} bytes)` : 'null',
-        imagemDestaque: formData.imagemDestaque || 'vazio',
-      });
-
       // Preparar dados para o endpoint
       const dadosNoticia: CadastrarNoticiaRequest = {
         titulo: formData.titulo,
@@ -50,18 +43,11 @@ export const CriarNoticia = () => {
       // Se houver arquivo, enviar o arquivo
       if (formData.imagemArquivo) {
         dadosNoticia.imagemCapa = formData.imagemArquivo;
-        console.log('[CriarNoticia] Enviando arquivo:', formData.imagemArquivo.name);
       }
       // Senão, se houver URL (e não for blob), enviar a URL
       else if (formData.imagemDestaque && !formData.imagemDestaque.startsWith('blob:')) {
         dadosNoticia.imagemCapaUrl = formData.imagemDestaque;
-        console.log('[CriarNoticia] Enviando URL:', formData.imagemDestaque);
       }
-
-      console.log('[CriarNoticia] Dados a enviar:', {
-        ...dadosNoticia,
-        imagemCapa: dadosNoticia.imagemCapa ? `File(${dadosNoticia.imagemCapa.name})` : undefined,
-      });
 
       // Chamar API
       await noticiasService.cadastrar(dadosNoticia);

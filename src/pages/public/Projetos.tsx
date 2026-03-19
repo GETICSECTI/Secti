@@ -89,7 +89,6 @@ export const Projetos = () => {
       } catch (err) {
         const mensagemErro = handleApiError(err);
         setError(mensagemErro);
-        console.error('Erro ao carregar projetos:', err);
       } finally {
         setIsLoading(false);
       }

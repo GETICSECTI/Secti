@@ -52,8 +52,8 @@ export const AvisosIntencaoContratar = () => {
         });
         const tagsOrdenadas = [...response.tags].sort((a, b) => a.nome.localeCompare(b.nome));
         setTags(tagsOrdenadas);
-      } catch (err) {
-        console.error('Erro ao carregar tags:', err);
+      } catch {
+        //Intencionalmente Ignorado
       } finally {
         setIsLoadingTags(false);
       }
@@ -83,7 +83,6 @@ export const AvisosIntencaoContratar = () => {
       } catch (err) {
         const mensagem = handleApiError(err);
         setError(mensagem);
-        console.error('Erro ao carregar avisos:', err);
       } finally {
         setIsLoading(false);
       }
@@ -128,8 +127,7 @@ export const AvisosIntencaoContratar = () => {
     try {
       setDownloadingId(aviso.id);
       await downloadAviso(aviso.caminhoArquivo, aviso.titulo);
-    } catch (err) {
-      console.error('Erro ao baixar aviso:', err);
+    } catch {
       alert('Erro ao baixar o arquivo. Tente novamente.');
     } finally {
       setDownloadingId(null);

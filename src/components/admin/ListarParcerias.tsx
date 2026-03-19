@@ -46,8 +46,7 @@ export const ListarParcerias = ({
     setDownloadingId(parceria.id);
     try {
       await downloadFn(parceria.caminhoArquivo, parceria.nomeArquivo);
-    } catch (error) {
-      console.error('Erro ao baixar parceria:', error);
+    } catch {
       setDownloadError('Erro ao baixar a parceria. Tente novamente.');
     } finally {
       setDownloadingId(null);

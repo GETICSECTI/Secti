@@ -344,13 +344,6 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('[NoticiaForm] handleSubmit - Estado atual:', {
-      titulo: formData.titulo,
-      autor: formData.autor,
-      imagemArquivo: formData.imagemArquivo ? `${formData.imagemArquivo.name} (${formData.imagemArquivo.size} bytes)` : 'null',
-      imagemDestaque: formData.imagemDestaque || 'vazio',
-    });
-
     // Validações do frontend (espelham validações do backend)
     const erros: string[] = [];
 
@@ -390,12 +383,6 @@ export const NoticiaForm = ({ initialData, onSubmit, isSubmitting }: NoticiaForm
       conteudoParaEnviar = DOMPurify.sanitize(formData.conteudo || '');
     }
 
-    console.log('[NoticiaForm] Chamando onSubmit com dados:', {
-      ...formData,
-      conteudo: formData.imagemArquivo ? `File(${formData.imagemArquivo.name})` : 'null',
-      // mostrar tamanho do conteudo enviado para debug
-      conteudoParaEnviarPreview: conteudoParaEnviar.substring(0, 200) + (conteudoParaEnviar.length > 200 ? '...' : ''),
-    });
 
     await onSubmit({ ...formData, conteudo: conteudoParaEnviar });
   };

@@ -139,12 +139,6 @@ export const projetosService = {
       throw new Error(errosValidacao.join(' '));
     }
 
-    console.log('[ProjetosService] Dados recebidos:', {
-      titulo: data.titulo,
-      fotoCapa: data.fotoCapa ? `File: ${data.fotoCapa.name} (${data.fotoCapa.size} bytes)` : 'não fornecida',
-      logo: data.logo ? `File: ${data.logo.name} (${data.logo.size} bytes)` : 'não fornecida',
-    });
-
     const formData = new FormData();
     formData.append('Titulo', data.titulo);
     if (data.descricao) formData.append('Descricao', data.descricao);
@@ -153,21 +147,10 @@ export const projetosService = {
       formData.append('PerguntasFrequentes', JSON.stringify(data.perguntasFrequentes));
     }
     if (data.fotoCapa) {
-      console.log('[ProjetosService] Anexando FotoCapa:', data.fotoCapa.name);
       formData.append('FotoCapa', data.fotoCapa);
     }
     if (data.logo) {
-      console.log('[ProjetosService] Anexando Logo:', data.logo.name);
       formData.append('Logo', data.logo);
-    }
-
-    console.log('[ProjetosService] FormData entries:');
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-      } else {
-        console.log(`  ${key}:`, value);
-      }
     }
 
     const response = await apiClient.post<ProjetoResponse>('/Projeto/cadastrar', formData);
@@ -261,12 +244,6 @@ export const projetosService = {
       throw new Error(errosValidacao.join(' '));
     }
 
-    console.log('[ProjetosService] Editar - Dados recebidos:', {
-      titulo: data.titulo,
-      fotoCapa: data.fotoCapa ? `File: ${data.fotoCapa.name} (${data.fotoCapa.size} bytes)` : 'não fornecida',
-      logo: data.logo ? `File: ${data.logo.name} (${data.logo.size} bytes)` : 'não fornecida',
-    });
-
     const formData = new FormData();
     formData.append('Titulo', data.titulo);
     if (data.descricao) formData.append('Descricao', data.descricao);
@@ -275,22 +252,12 @@ export const projetosService = {
       formData.append('PerguntasFrequentes', JSON.stringify(data.perguntasFrequentes));
     }
     if (data.fotoCapa) {
-      console.log('[ProjetosService] Editar - Anexando FotoCapa:', data.fotoCapa.name);
       formData.append('FotoCapa', data.fotoCapa);
     }
     if (data.logo) {
-      console.log('[ProjetosService] Editar - Anexando Logo:', data.logo.name);
       formData.append('Logo', data.logo);
     }
 
-    console.log('[ProjetosService] Editar - FormData entries:');
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-      } else {
-        console.log(`  ${key}:`, value);
-      }
-    }
 
     // PUT é o método correto para edição, o interceptor do apiClient já remove o Content-Type
     // para que o navegador defina automaticamente o boundary correto para multipart/form-data

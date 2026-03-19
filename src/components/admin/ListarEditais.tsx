@@ -43,8 +43,7 @@ export const ListarEditais = ({
     setDownloadingId(edital.id);
     try {
       await downloadEdital(edital.caminhoArquivo, edital.nomeArquivo);
-    } catch (error) {
-      console.error('Erro ao baixar edital:', error);
+    } catch {
       setDownloadError('Erro ao baixar o edital. Tente novamente.');
     } finally {
       setDownloadingId(null);

@@ -44,8 +44,7 @@ export const ListarDocumentosServidor = ({
     setDownloadingId(documento.id);
     try {
       await downloadDocumentoServidor(documento.caminhoArquivo, documento.nomeArquivo);
-    } catch (error) {
-      console.error('Erro ao baixar documento:', error);
+    } catch {
       setDownloadError('Erro ao baixar o documento. Tente novamente.');
     } finally {
       setDownloadingId(null);

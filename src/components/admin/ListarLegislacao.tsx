@@ -46,8 +46,7 @@ export const ListarLegislacao = ({
     setDownloadingId(legislacao.id);
     try {
       await downloadFn(legislacao.caminhoArquivo, legislacao.nomeArquivo);
-    } catch (error) {
-      console.error('Erro ao baixar legislação:', error);
+    } catch {
       setDownloadError('Erro ao baixar a legislação. Tente novamente.');
     } finally {
       setDownloadingId(null);

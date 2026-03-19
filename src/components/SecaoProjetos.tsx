@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { projetosService } from '../services/projetosService';
-import { handleApiError } from '../utils/errorHandler';
 
 export type ProjetoItem = {
     id?: string | number;
@@ -41,8 +40,7 @@ export const SecaoProjetos: React.FC<SecaoProjetosProps> = ({ projetos: projetos
                 }));
 
                 setProjetos(projetosFormatados);
-            } catch (error) {
-                console.error('Erro ao carregar projetos:', handleApiError(error));
+            } catch {
                 // Manter projetos iniciais em caso de erro
                 if (projetosInicial.length > 0) {
                     setProjetos(projetosInicial);
