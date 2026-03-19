@@ -28,6 +28,8 @@ export const EditarProjeto = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [fotoCapaPreview, setFotoCapaPreview] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [removerFotoCapa, setRemoverFotoCapa] = useState(false);
+  const [removerLogo, setRemoverLogo] = useState(false);
 
   // Editor for descrição
   const [tipoConteudo, setTipoConteudo] = useState<'simples' | 'rico'>('simples');
@@ -250,6 +252,7 @@ export const EditarProjeto = () => {
       setFotoCapaFile(null);
       setFotoCapaUrl('');
       setFotoCapaPreview(null);
+      setRemoverFotoCapa(true);
       setFormData(prev => ({
         ...prev,
         fotoCapaCaminho: '',
@@ -258,6 +261,7 @@ export const EditarProjeto = () => {
       setLogoFile(null);
       setLogoUrl('');
       setLogoPreview(null);
+      setRemoverLogo(true);
       setFormData(prev => ({
         ...prev,
         logoCaminho: '',
@@ -273,13 +277,11 @@ export const EditarProjeto = () => {
       setSaving(true);
 
       // Criar payload de perguntas frequentes (sempre array, nunca null)
-      const perguntasPayload = perguntasFrequentes.length > 0
-        ? perguntasFrequentes.map((p, index) => ({
-            pergunta: p.pergunta,
-            resposta: p.resposta,
-            ordem: index,
-          }))
-        : [];
+      const perguntasPayload = perguntasFrequentes.map((p, index) => ({
+        pergunta: p.pergunta,
+        resposta: p.resposta,
+        ordem: index,
+      }));
 
       // obter descricao correta
       const descricaoRaw = tipoConteudo === 'simples' ? (editorRef.current ? editorRef.current.innerHTML : formData.descricao) : formData.descricao;
@@ -307,14 +309,16 @@ export const EditarProjeto = () => {
         return;
       }
 
-      // Enviar dados (perguntasPayload é sempre um array, nunca null)
+      // Enviar dados com flags de remoção
       await projetosService.editar(parseInt(id), {
         titulo: formData.titulo,
         descricao: descricaoParaEnviar,
         url: formData.url,
-        perguntasFrequentes: perguntasPayload.length > 0 ? perguntasPayload : [],
+        perguntasFrequentes: perguntasPayload,
         fotoCapa: fotoCapaFile || undefined,
         logo: logoFile || undefined,
+        removerFotoCapa: removerFotoCapa,
+        removerLogo: removerLogo,
       });
 
       navigate('/admin/projetos');

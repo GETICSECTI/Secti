@@ -23,6 +23,8 @@ export interface CadastrarProjetoRequest {
   perguntasFrequentes?: PerguntaFrequentePayload[];
   fotoCapa?: File;
   logo?: File;
+  removerFotoCapa?: boolean;
+  removerLogo?: boolean;
 }
 
 // Types para resposta de projeto cadastrado
@@ -81,6 +83,8 @@ export interface EditarProjetoRequest {
   perguntasFrequentes?: PerguntaFrequentePayload[];
   fotoCapa?: File;
   logo?: File;
+  removerFotoCapa?: boolean;
+  removerLogo?: boolean;
 }
 
 // Type para resposta de edição
@@ -248,16 +252,23 @@ export const projetosService = {
     formData.append('Titulo', data.titulo);
     if (data.descricao) formData.append('Descricao', data.descricao);
     if (data.url) formData.append('Url', data.url);
-    if (data.perguntasFrequentes && data.perguntasFrequentes.length > 0) {
-      formData.append('PerguntasFrequentes', JSON.stringify(data.perguntasFrequentes));
-    }
+    
+    // Sempre enviar perguntas frequentes (pode ser array vazio)
+    formData.append('PerguntasFrequentes', JSON.stringify(data.perguntasFrequentes || []));
+    
     if (data.fotoCapa) {
       formData.append('FotoCapa', data.fotoCapa);
     }
+    if (data.removerFotoCapa) {
+      formData.append('RemoverFotoCapa', 'true');
+    }
+    
     if (data.logo) {
       formData.append('Logo', data.logo);
     }
-
+    if (data.removerLogo) {
+      formData.append('RemoverLogo', 'true');
+    }
 
     // PUT é o método correto para edição, o interceptor do apiClient já remove o Content-Type
     // para que o navegador defina automaticamente o boundary correto para multipart/form-data
