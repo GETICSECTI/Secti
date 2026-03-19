@@ -272,11 +272,14 @@ export const EditarProjeto = () => {
     try {
       setSaving(true);
 
-      const perguntasPayload = perguntasFrequentes.map((p, index) => ({
-        pergunta: p.pergunta,
-        resposta: p.resposta,
-        ordem: index,
-      }));
+      // Criar payload de perguntas frequentes (sempre array, nunca null)
+      const perguntasPayload = perguntasFrequentes.length > 0
+        ? perguntasFrequentes.map((p, index) => ({
+            pergunta: p.pergunta,
+            resposta: p.resposta,
+            ordem: index,
+          }))
+        : [];
 
       // obter descricao correta
       const descricaoRaw = tipoConteudo === 'simples' ? (editorRef.current ? editorRef.current.innerHTML : formData.descricao) : formData.descricao;
@@ -304,12 +307,12 @@ export const EditarProjeto = () => {
         return;
       }
 
-      // Enviar dados
+      // Enviar dados (perguntasPayload é sempre um array, nunca null)
       await projetosService.editar(parseInt(id), {
         titulo: formData.titulo,
         descricao: descricaoParaEnviar,
         url: formData.url,
-        perguntasFrequentes: perguntasPayload,
+        perguntasFrequentes: perguntasPayload.length > 0 ? perguntasPayload : [],
         fotoCapa: fotoCapaFile || undefined,
         logo: logoFile || undefined,
       });
