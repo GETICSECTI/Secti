@@ -131,7 +131,7 @@ export const Projetos = () => {
                       <h2 className="text-3xl md:text-4xl font-bold mt-2">{projetoDetalhe.titulo}</h2>
                     </div>
                     {projetoDetalhe.logoCaminho && (
-                      <div className="bg-white/10 rounded-lg p-4 flex items-center justify-center">
+                      <div className="bg-white rounded-lg p-4 flex items-center justify-center">
                         <img
                           src={projetoDetalhe.logoCaminho}
                           alt={`Logo ${projetoDetalhe.titulo}`}
