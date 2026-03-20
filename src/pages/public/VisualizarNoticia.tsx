@@ -111,7 +111,7 @@ export const VisualizarNoticia = () => {
   return (
     <PublicLayout>
       {/* Cabeçalho Azul */}
-      <div className="bg-[#0C2856] text-white py-8">
+      <div className="bg-[#0C2856] text-white py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <nav className="mb-4">
@@ -138,10 +138,13 @@ export const VisualizarNoticia = () => {
             </ol>
           </nav>
 
-          {/* Título */}
-          <h1 className="text-3xl break-all md:text-5xl font-bold mb-4 leading-tight max-w-4xl">
-            {noticia.titulo}
-          </h1>
+          <div className="w-full">
+            {/* Título */}
+            <h1 className="text-3xl break-all md:text-5xl font-bold mb-4 leading-tight w-full">
+              {noticia.titulo}
+            </h1>
+          </div>
+
 
           {/* Metadados */}
           <div className="flex flex-wrap items-center gap-4 text-blue-100">
